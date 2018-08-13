@@ -83,14 +83,12 @@ Array<T> pinverse_svd(const Array<T> &in)
         seqs[0] = af_span;
         seqs[1] = {0, sPinvCast.dims()[0], 1.};
         v = createSubArray<T>(v, seqs);
-        // v = v(af::span, af::seq(sPinvCast.dims(0)));
     }
     if (uT.dims()[0] > sPinvCast.dims()[1]) {
         std::vector<af_seq> seqs(2);
         seqs[0] = {0, sPinvCast.dims()[1], 1.};
         seqs[1] = af_span;
         uT = createSubArray<T>(uT, seqs);
-        // uT = uT(af::seq(sPinvCast.dims(1)), af::span);
     }
 
     Array<T> out = matmul<T>(matmul<T>(v, sPinvCast, AF_MAT_NONE, AF_MAT_NONE),
@@ -129,8 +127,8 @@ af_err af_pinverse(af_array *out, const af_array in, const af_mat_prop options)
         }
 
         switch(type) {
-            case f32: output = pinverse<float      >(in);  break;
-            case f64: output = pinverse<double     >(in);  break;
+            case f32: output = pinverse<float  >(in);  break;
+            case f64: output = pinverse<double >(in);  break;
             case c32: output = pinverse<cfloat >(in);  break;
             case c64: output = pinverse<cdouble>(in);  break;
             default:  TYPE_ERROR(1, type);
