@@ -21,28 +21,14 @@
 #include <common/err_common.hpp>
 #include <diagonal.hpp>
 #include <handle.hpp>
+#include <logic.hpp>
 #include <math.hpp>
+#include <select.hpp>
 #include <svd.hpp>
 #include <transpose.hpp>
 
 using af::dim4;
 using namespace detail;
-
-inline Array<float> transpose_lcl(const Array<float>& in) {
-    return transpose<float>(in, false);
-}
-
-inline Array<double> transpose_lcl(const Array<double>& in) {
-    return transpose<double>(in, false);
-}
-
-inline Array<cfloat> transpose_lcl(const Array<cfloat>& in) {
-    return transpose<cfloat>(in, true);
-}
-
-inline Array<cdouble> transpose_lcl(const Array<cdouble>& in) {
-    return transpose<cdouble>(in, true);
-}
 
 template<typename T>
 Array<T> pinverse_svd(const Array<T> &in)
@@ -60,14 +46,23 @@ Array<T> pinverse_svd(const Array<T> &in)
     Array<T> vT = createEmptyArray<T>(dim4(N, N));
     svd<T, Tr>(sVec, u, vT, in);
 
-    Array<T> v = transpose_lcl(vT);
+    Array<T> v = transpose(vT, true);
 
-    Array<Tr> ones = createValueArray<Tr>(sVec.dims(), scalar<Tr>(1.));
-    Array<Tr> sVecRecip = arithOp<Tr, af_div_t>(ones, sVec, sVec.dims());
+    // Round down small values to zero to avoid large reciprocals later
+    Array<Tr> eps = createValueArray<Tr>(sVec.dims(), scalar<Tr>(1e-6));
+    Array<char> cond = logicOp<Tr, af_lt_t>(sVec, eps, sVec.dims());
+    Array<Tr> sVecRoundOff = createSelectNode<Tr, true>(cond, sVec, 0., sVec.dims());
+
+    // Generate s+
+    Array<Tr> ones = createValueArray<Tr>(sVecRoundOff.dims(), scalar<Tr>(1.));
+    Array<Tr> sVecRecip = arithOp<Tr, af_div_t>(ones, sVecRoundOff, sVecRoundOff.dims());
     Array<Tr> sPinv = diagCreate<Tr>(sVecRecip, 0);
+
+    // Cast s+ back to original data type for matmul later
+    // (since svd makes s' type the base type of T)
     Array<T> sPinvCast = cast<T, Tr>(sPinv);
 
-    Array<T> uT = transpose_lcl(u);
+    Array<T> uT = transpose(u, true);
 
     // Adjust v and u* for final matmul, based on s+'s size
     // Recall that in+ = v s+ u*
@@ -79,15 +74,17 @@ Array<T> pinverse_svd(const Array<T> &in)
     // Removal of extra dim0/dim1 doesn't affect integrity of computation because
     //  extra dim0/dim1 will theoretically be just multiplied with s+'s zero dim1/dim0
     if (v.dims()[1] > sPinvCast.dims()[0]) {
-        std::vector<af_seq> seqs(2);
-        seqs[0] = af_span;
-        seqs[1] = {0, sPinvCast.dims()[0], 1.};
+        std::vector<af_seq> seqs = {
+            af_span,
+            {0., static_cast<double>(sPinvCast.dims()[0]), 1.}
+        };
         v = createSubArray<T>(v, seqs);
     }
     if (uT.dims()[0] > sPinvCast.dims()[1]) {
-        std::vector<af_seq> seqs(2);
-        seqs[0] = {0, sPinvCast.dims()[1], 1.};
-        seqs[1] = af_span;
+        std::vector<af_seq> seqs = {
+            {0., static_cast<double>(sPinvCast.dims()[1]), 1.},
+            af_span
+        };
         uT = createSubArray<T>(uT, seqs);
     }
 
@@ -118,7 +115,7 @@ af_err af_pinverse(af_array *out, const af_array in, const af_mat_prop options)
             AF_ERROR("Using this property is not yet supported in inverse", AF_ERR_NOT_SUPPORTED);
         }
 
-        ARG_ASSERT(1, i_info.isFloating());                       // Only floating and complex types
+        ARG_ASSERT(1, i_info.isFloating()); // Only floating and complex types
 
         af_array output;
 
