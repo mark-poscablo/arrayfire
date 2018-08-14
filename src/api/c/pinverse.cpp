@@ -59,20 +59,15 @@ Array<T> pinverse_svd(const Array<T> &in)
     Array<Tr> sPinv = diagCreate<Tr>(sVecRecip, 0);
 
     // Cast s+ back to original data type for matmul later
-    // (since svd makes s' type the base type of T)
+    // (since svd() makes s' type the base type of T)
     Array<T> sPinvCast = cast<T, Tr>(sPinv);
 
     Array<T> uT = transpose(u, true);
 
-    // Adjust v and u* for final matmul, based on s+'s size
-    // Recall that in+ = v s+ u*
-    // sVec produced by af::svd() has minimal dim length (no extra zero)
-    // Therefore, s+ produced by af::diag() will have minimal dims as well
-    //  (no extra zeroed dim0 or dim1)
-    // v's dim1 must == s+'s dim0, so if it's >, the last dim1 should be removed
-    // u*'s dim0 must == s+'s dim1, so if it's >, the last dim0 should be removed
-    // Removal of extra dim0/dim1 doesn't affect integrity of computation because
-    //  extra dim0/dim1 will theoretically be just multiplied with s+'s zero dim1/dim0
+    // Crop v and u* for final matmul later based on s+'s size, because
+    // sVec produced by svd() has minimal dim length (no extra zeroes).
+    // Thus s+ produced by diagCreate() will have minimal dims as well,
+    // and v could have an extra dim0 or u* could have an extra dim1
     if (v.dims()[1] > sPinvCast.dims()[0]) {
         std::vector<af_seq> seqs = {
             af_span,

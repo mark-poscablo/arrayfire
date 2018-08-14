@@ -28,28 +28,34 @@ using af::max;
 using af::pinverse;
 using af::randu;
 using std::abs;
+using std::string;
+using std::vector;
 
 template<typename T>
-void pinverseTester(const int m, const int n, double eps)
-{
-    if (noDoubleTests<T>()) return;
-    if (noLAPACKTests()) return;
-#if 1
-    array A  = cpu_randu<T>(dim4(m, n));
-#else
-    array A  = randu(m, n, (dtype)dtype_traits<T>::af_type);
-#endif
-
-    //! [ex_inverse]
-    array IA = pinverse(A);
-    array I = matmul(A, IA);
-    //! [ex_inverse]
-
-    array I2 = identity(m, m, (dtype)dtype_traits<T>::af_type);
-
-    ASSERT_ARRAYS_NEAR(I2, I, eps);
+array makeComplex(dim4 dims, const vector<T>& real, const vector<T>& imag) {
+    array realArr(dims, &real.front());
+    array imagArr(dims, &imag.front());
+    return af::complex(realArr, imagArr);
 }
 
+template<typename T>
+array readTestInput(string testFilePath) {
+    typedef typename dtype_traits<T>::base_type InBaseType;
+    dtype outAfType = (dtype) dtype_traits<T>::af_type;
+
+    vector<dim4> dimsVec;
+    vector<vector<InBaseType> > inVec;
+    vector<vector<InBaseType> > goldVec;
+    readTestsFromFile<InBaseType, InBaseType>(testFilePath, dimsVec, inVec, goldVec);
+    dim4 inDims = dimsVec[0];
+
+    if (outAfType == c32 || outAfType == c64) {
+        return makeComplex(inDims, inVec[1], inVec[2]);
+    }
+    else {
+        return array(inDims, &inVec[0].front());
+    }
+}
 
 template<typename T>
 class Pinverse : public ::testing::Test
@@ -57,71 +63,62 @@ class Pinverse : public ::testing::Test
 
 };
 
+// Epsilons taken from test/inverse.cpp
 template<typename T>
 double eps();
 
 template<>
 double eps<float>() {
-  return 0.01f;
+    return 0.01f;
 }
 
 template<>
 double eps<double>() {
-  return 1e-5;
+    return 1e-5;
 }
 
 template<>
 double eps<cfloat>() {
-  return 0.01f;
+    return 0.01f;
 }
 
 template<>
 double eps<cdouble>() {
-  return 1e-5;
+    return 1e-5;
 }
 
 typedef ::testing::Types<float, cfloat, double, cdouble> TestTypes;
 TYPED_TEST_CASE(Pinverse, TestTypes);
 
-TYPED_TEST(Pinverse, Regular) {
-    pinverseTester<TypeParam>(1000, 800, eps<TypeParam>());
-}
-
-TYPED_TEST(Pinverse, MultiplePowerOfTwo) {
-    pinverseTester<TypeParam>(2048, 1024, eps<TypeParam>());
-}
+// Test Moore-Penrose conditions
 // See https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_inverse#Definition
-// for descriptions of these tests
 
-const int rows = 1000;
-const int cols = 800;
-TEST(Pinverse, Cond1) {
-    array in = randu(rows, cols);
-    array in_pinv = pinverse(in);
-    array out = matmul(in, in_pinv, in);
-    ASSERT_ARRAYS_NEAR(in, out, 0.001f);
+TYPED_TEST(Pinverse, AApinv_IsIdentity) {
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse.test"));
+    array inpinv = pinverse(in);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<TypeParam>());
 }
 
-TEST(Pinverse, Cond2) {
-    array in = randu(rows, cols);
-    array in_pinv = pinverse(in);
-    array out = matmul(in_pinv, in, in_pinv);
-    ASSERT_ARRAYS_NEAR(in_pinv, out, 0.001f);
+TYPED_TEST(Pinverse, Apinv_IsWeakInvForMultSemigroup) {
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse.test"));
+    array inpinv = pinverse(in);
+    array out = matmul(inpinv, in, inpinv);
+    ASSERT_ARRAYS_NEAR(inpinv, out, eps<TypeParam>());
 }
 
-TEST(Pinverse, Cond3) {
-    array in = randu(rows, cols);
-    array in_pinv = pinverse(in);
-    array aaplus = matmul(in, in_pinv);
-    array out = matmul(in, in_pinv).H();
-    ASSERT_ARRAYS_NEAR(aaplus, out, 0.001f);
+TYPED_TEST(Pinverse, AApinv_IsHermitian) {
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse.test"));
+    array inpinv = pinverse(in);
+    array aapinv = matmul(in, inpinv);
+    array out = matmul(in, inpinv).H();
+    ASSERT_ARRAYS_NEAR(aapinv, out, eps<TypeParam>());
 }
 
-TEST(Pinverse, Cond4) {
-    array in = randu(rows, cols);
-    array in_pinv = pinverse(in);
-    af::array aplusa = af::matmul(in_pinv, in);
-    af::array out = af::matmul(in_pinv, in).H();
-    ASSERT_ARRAYS_NEAR(aplusa, out, 0.001f);
+TYPED_TEST(Pinverse, ApinvA_IsHermitian) {
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse.test"));
+    array inpinv = pinverse(in);
+    array apinva = af::matmul(inpinv, in);
+    array out = af::matmul(inpinv, in).H();
+    ASSERT_ARRAYS_NEAR(apinva, out, eps<TypeParam>());
 }
-
