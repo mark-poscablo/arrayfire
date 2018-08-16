@@ -31,6 +31,24 @@ using af::dim4;
 using namespace detail;
 
 template<typename T>
+void adjustVU(Array<T>& v, Array<T>& uT, const Array<T>& sPinv) {
+    if (v.dims()[1] > sPinv.dims()[0]) {
+        std::vector<af_seq> seqs = {
+            {0., static_cast<double>(v.dims()[0] - 1), 1.},
+            {0., static_cast<double>(sPinv.dims()[0] - 1), 1.}
+        };
+        v = createSubArray<T>(v, seqs);
+    }
+    if (uT.dims()[0] > sPinv.dims()[1]) {
+        std::vector<af_seq> seqs = {
+            {0., static_cast<double>(sPinv.dims()[1] - 1), 1.},
+            {0., static_cast<double>(uT.dims()[1] - 1), 1.}
+        };
+        uT = createSubArray<T>(uT, seqs);
+    }
+}
+
+template<typename T>
 Array<T> pinverse_svd(const Array<T> &in)
 {
     // Moore-Penrose Pseudoinverse
@@ -49,16 +67,17 @@ Array<T> pinverse_svd(const Array<T> &in)
     Array<T> v = transpose(vT, true);
 
     // Round down small values to zero to avoid large reciprocals later
-    Array<Tr> eps = createValueArray<Tr>(sVec.dims(), scalar<Tr>(1e-6));
+    Array<Tr> eps = createValueArray<Tr>(sVec.dims(), scalar<Tr>(1e-12));
     Array<char> cond = logicOp<Tr, af_lt_t>(sVec, eps, sVec.dims());
     Array<Tr> sVecRoundOff = createSelectNode<Tr, true>(cond, sVec, 0., sVec.dims());
+    sVecRoundOff.eval();
 
-    // Generate s+
+    // Generate s pinverse
     Array<Tr> ones = createValueArray<Tr>(sVecRoundOff.dims(), scalar<Tr>(1.));
     Array<Tr> sVecRecip = arithOp<Tr, af_div_t>(ones, sVecRoundOff, sVecRoundOff.dims());
     Array<Tr> sPinv = diagCreate<Tr>(sVecRecip, 0);
 
-    // Cast s+ back to original data type for matmul later
+    // Cast s pinverse back to original data type for matmul later
     // (since svd() makes s' type the base type of T)
     Array<T> sPinvCast = cast<T, Tr>(sPinv);
 
@@ -68,20 +87,7 @@ Array<T> pinverse_svd(const Array<T> &in)
     // sVec produced by svd() has minimal dim length (no extra zeroes).
     // Thus s+ produced by diagCreate() will have minimal dims as well,
     // and v could have an extra dim0 or u* could have an extra dim1
-    if (v.dims()[1] > sPinvCast.dims()[0]) {
-        std::vector<af_seq> seqs = {
-            af_span,
-            {0., static_cast<double>(sPinvCast.dims()[0]), 1.}
-        };
-        v = createSubArray<T>(v, seqs);
-    }
-    if (uT.dims()[0] > sPinvCast.dims()[1]) {
-        std::vector<af_seq> seqs = {
-            {0., static_cast<double>(sPinvCast.dims()[1]), 1.},
-            af_span
-        };
-        uT = createSubArray<T>(uT, seqs);
-    }
+    adjustVU(v, uT, sPinvCast);
 
     Array<T> out = matmul<T>(matmul<T>(v, sPinvCast, AF_MAT_NONE, AF_MAT_NONE),
                              uT, AF_MAT_NONE, AF_MAT_NONE);

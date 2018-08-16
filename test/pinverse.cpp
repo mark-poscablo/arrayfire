@@ -93,22 +93,22 @@ TYPED_TEST_CASE(Pinverse, TestTypes);
 // Test Moore-Penrose conditions
 // See https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_inverse#Definition
 
-TYPED_TEST(Pinverse, AApinv_IsIdentity) {
-    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse.test"));
+TYPED_TEST(Pinverse, AApinvA_A) {
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array inpinv = pinverse(in);
     array out = matmul(in, inpinv, in);
     ASSERT_ARRAYS_NEAR(in, out, eps<TypeParam>());
 }
 
-TYPED_TEST(Pinverse, Apinv_IsWeakInvForMultSemigroup) {
-    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse.test"));
+TYPED_TEST(Pinverse, ApinvAApinv_Apinv) {
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array inpinv = pinverse(in);
     array out = matmul(inpinv, in, inpinv);
     ASSERT_ARRAYS_NEAR(inpinv, out, eps<TypeParam>());
 }
 
 TYPED_TEST(Pinverse, AApinv_IsHermitian) {
-    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse.test"));
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array inpinv = pinverse(in);
     array aapinv = matmul(in, inpinv);
     array out = matmul(in, inpinv).H();
@@ -116,9 +116,17 @@ TYPED_TEST(Pinverse, AApinv_IsHermitian) {
 }
 
 TYPED_TEST(Pinverse, ApinvA_IsHermitian) {
-    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse.test"));
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array inpinv = pinverse(in);
     array apinva = af::matmul(inpinv, in);
     array out = af::matmul(inpinv, in).H();
     ASSERT_ARRAYS_NEAR(apinva, out, eps<TypeParam>());
 }
+
+TEST(Pinverse, Dim1GtDim0) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse8x10.test"));
+    array inpinv = pinverse(in);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
+}
+
