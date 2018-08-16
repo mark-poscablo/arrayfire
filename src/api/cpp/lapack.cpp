@@ -117,10 +117,10 @@ namespace af
         return array(out);
     }
 
-    array pinverse(const array &in, const matProp options)
+    array pinverse(const array &in, const double tol, const matProp options)
     {
         af_array out;
-        AF_THROW(af_pinverse(&out, in.get(), options));
+        AF_THROW(af_pinverse(&out, in.get(), tol, options));
         return array(out);
     }
 

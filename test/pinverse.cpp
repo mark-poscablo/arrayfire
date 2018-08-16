@@ -58,6 +58,25 @@ array readTestInput(string testFilePath) {
 }
 
 template<typename T>
+array readTestGold(string testFilePath) {
+    typedef typename dtype_traits<T>::base_type InBaseType;
+    dtype outAfType = (dtype) dtype_traits<T>::af_type;
+
+    vector<dim4> dimsVec;
+    vector<vector<InBaseType> > inVec;
+    vector<vector<InBaseType> > goldVec;
+    readTestsFromFile<InBaseType, InBaseType>(testFilePath, dimsVec, inVec, goldVec);
+    dim4 goldDims(dimsVec[0][1], dimsVec[0][0]);
+
+    if (outAfType == c32 || outAfType == c64) {
+        return makeComplex(goldDims, goldVec[1], goldVec[2]);
+    }
+    else {
+        return array(goldDims, &goldVec[0].front());
+    }
+}
+
+template<typename T>
 class Pinverse : public ::testing::Test
 {
 
@@ -123,6 +142,20 @@ TYPED_TEST(Pinverse, ApinvA_IsHermitian) {
     ASSERT_ARRAYS_NEAR(apinva, out, eps<TypeParam>());
 }
 
+TEST(Pinverse, CompareWithNumpy) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    array gold = readTestGold<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    array out = pinverse(in);
+    ASSERT_ARRAYS_NEAR(gold, out, eps<float>());
+}
+
+TEST(Pinverse, Square) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x10.test"));
+    array inpinv = pinverse(in);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
+}
+
 TEST(Pinverse, Dim1GtDim0) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse8x10.test"));
     array inpinv = pinverse(in);
@@ -130,3 +163,9 @@ TEST(Pinverse, Dim1GtDim0) {
     ASSERT_ARRAYS_NEAR(in, out, eps<float>());
 }
 
+TEST(Pinverse, CustomTol) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    array inpinv = pinverse(in, 1e-12);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
+}

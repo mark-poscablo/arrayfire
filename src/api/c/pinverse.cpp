@@ -23,12 +23,15 @@
 #include <handle.hpp>
 #include <logic.hpp>
 #include <math.hpp>
+#include <reduce.hpp>
 #include <select.hpp>
 #include <svd.hpp>
 #include <transpose.hpp>
 
 using af::dim4;
 using namespace detail;
+
+const double dfltTol = 1e-9;
 
 template<typename T>
 void adjustVU(Array<T>& v, Array<T>& uT, const Array<T>& sPinv) {
@@ -49,7 +52,7 @@ void adjustVU(Array<T>& v, Array<T>& uT, const Array<T>& sPinv) {
 }
 
 template<typename T>
-Array<T> pinverse_svd(const Array<T> &in)
+Array<T> pinverseSvd(const Array<T> &in, const double tol)
 {
     // Moore-Penrose Pseudoinverse
 
@@ -64,22 +67,24 @@ Array<T> pinverse_svd(const Array<T> &in)
     Array<T> vT = createEmptyArray<T>(dim4(N, N));
     svd<T, Tr>(sVec, u, vT, in);
 
+    // Cast s back to original data type for matmul later
+    // (since svd() makes s' type the base type of T)
+    Array<T> sVecCast = cast<T, Tr>(sVec);
+
     Array<T> v = transpose(vT, true);
 
     // Round down small values to zero to avoid large reciprocals later
-    Array<Tr> eps = createValueArray<Tr>(sVec.dims(), scalar<Tr>(1e-12));
-    Array<char> cond = logicOp<Tr, af_lt_t>(sVec, eps, sVec.dims());
-    Array<Tr> sVecRoundOff = createSelectNode<Tr, true>(cond, sVec, 0., sVec.dims());
-    sVecRoundOff.eval();
+    double relativeTol = tol * static_cast<double>(max(M, N))
+                             * reduce_all<af_max_t, Tr, Tr>(sVec);
+    Array<T> eps = createValueArray<T>(sVecCast.dims(), scalar<T>(relativeTol));
+    Array<char> cond = logicOp<T, af_lt_t>(sVecCast, eps, sVecCast.dims());
+    sVecCast = createSelectNode<T, true>(cond, sVecCast, 0., sVecCast.dims());
+    sVecCast.eval();
 
-    // Generate s pinverse
-    Array<Tr> ones = createValueArray<Tr>(sVecRoundOff.dims(), scalar<Tr>(1.));
-    Array<Tr> sVecRecip = arithOp<Tr, af_div_t>(ones, sVecRoundOff, sVecRoundOff.dims());
-    Array<Tr> sPinv = diagCreate<Tr>(sVecRecip, 0);
-
-    // Cast s pinverse back to original data type for matmul later
-    // (since svd() makes s' type the base type of T)
-    Array<T> sPinvCast = cast<T, Tr>(sPinv);
+    // Make s vector into s pinverse array
+    Array<T> ones = createValueArray<T>(sVecCast.dims(), scalar<T>(1.));
+    Array<T> sVecRecip = arithOp<T, af_div_t>(ones, sVecCast, sVecCast.dims());
+    Array<T> sPinv = diagCreate<T>(sVecRecip, 0);
 
     Array<T> uT = transpose(u, true);
 
@@ -87,21 +92,22 @@ Array<T> pinverse_svd(const Array<T> &in)
     // sVec produced by svd() has minimal dim length (no extra zeroes).
     // Thus s+ produced by diagCreate() will have minimal dims as well,
     // and v could have an extra dim0 or u* could have an extra dim1
-    adjustVU(v, uT, sPinvCast);
+    adjustVU(v, uT, sPinv);
 
-    Array<T> out = matmul<T>(matmul<T>(v, sPinvCast, AF_MAT_NONE, AF_MAT_NONE),
+    Array<T> out = matmul<T>(matmul<T>(v, sPinv, AF_MAT_NONE, AF_MAT_NONE),
                              uT, AF_MAT_NONE, AF_MAT_NONE);
 
     return out;
 }
 
 template<typename T>
-static inline af_array pinverse(const af_array in)
+static inline af_array pinverse(const af_array in, const double tol)
 {
-    return getHandle(pinverse_svd<T>(getArray<T>(in)));
+    return getHandle(pinverseSvd<T>(getArray<T>(in), tol));
 }
 
-af_err af_pinverse(af_array *out, const af_array in, const af_mat_prop options)
+af_err af_pinverse(af_array *out, const af_array in, const double tol,
+                   const af_mat_prop options)
 {
     try {
         const ArrayInfo& i_info = getInfo(in);
@@ -124,11 +130,15 @@ af_err af_pinverse(af_array *out, const af_array in, const af_mat_prop options)
             return af_retain_array(out, in);
         }
 
+        double validTol = tol;
+        if (validTol < 0.) {
+            validTol = dfltTol;
+        }
         switch(type) {
-            case f32: output = pinverse<float  >(in);  break;
-            case f64: output = pinverse<double >(in);  break;
-            case c32: output = pinverse<cfloat >(in);  break;
-            case c64: output = pinverse<cdouble>(in);  break;
+            case f32: output = pinverse<float  >(in, validTol);  break;
+            case f64: output = pinverse<double >(in, validTol);  break;
+            case c32: output = pinverse<cfloat >(in, validTol);  break;
+            case c64: output = pinverse<cdouble>(in, validTol);  break;
             default:  TYPE_ERROR(1, type);
         }
         std::swap(*out, output);
