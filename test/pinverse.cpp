@@ -142,6 +142,31 @@ TYPED_TEST(Pinverse, ApinvA_IsHermitian) {
     ASSERT_ARRAYS_NEAR(apinva, out, eps<TypeParam>());
 }
 
+TEST(Pinverse, CustomTol) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    array inpinv = pinverse(in, 1e-12);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
+}
+
+TEST(Pinverse, C) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    af_array inpinv = 0, out = 0;
+    af_pinverse(&inpinv, in.get(), -1, AF_MAT_NONE);
+    af_matmul(&out, in.get(), inpinv, AF_MAT_NONE, AF_MAT_NONE);
+    af_matmul(&out, out, in.get(), AF_MAT_NONE, AF_MAT_NONE);
+    ASSERT_ARRAYS_NEAR(in.get(), out, eps<float>());
+}
+
+TEST(Pinverse, C_CustomTol) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    af_array inpinv = 0, out = 0;
+    af_pinverse(&inpinv, in.get(), 1e-12, AF_MAT_NONE);
+    af_matmul(&out, in.get(), inpinv, AF_MAT_NONE, AF_MAT_NONE);
+    af_matmul(&out, out, in.get(), AF_MAT_NONE, AF_MAT_NONE);
+    ASSERT_ARRAYS_NEAR(in.get(), out, eps<float>());
+}
+
 TEST(Pinverse, CompareWithNumpy) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array gold = readTestGold<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
@@ -163,9 +188,3 @@ TEST(Pinverse, Dim1GtDim0) {
     ASSERT_ARRAYS_NEAR(in, out, eps<float>());
 }
 
-TEST(Pinverse, CustomTol) {
-    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
-    array inpinv = pinverse(in, 1e-12);
-    array out = matmul(in, inpinv, in);
-    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
-}
