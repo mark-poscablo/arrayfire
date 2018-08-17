@@ -73,17 +73,21 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
 
     Array<T> v = transpose(vT, true);
 
-    // Round down small values to zero to avoid large reciprocals later
-    double relativeTol = tol * static_cast<double>(max(M, N))
-                             * reduce_all<af_max_t, Tr, Tr>(sVec);
-    Array<T> eps = createValueArray<T>(sVecCast.dims(), scalar<T>(relativeTol));
-    Array<char> cond = logicOp<T, af_lt_t>(sVecCast, eps, sVecCast.dims());
-    sVecCast = createSelectNode<T, true>(cond, sVecCast, 0., sVecCast.dims());
-    sVecCast.eval();
-
-    // Make s vector into s pinverse array
+    // Get reciprocal of sVec's non-zero values for s pinverse, except for
+    // very small non-zero values though (< relTol), in order to avoid very
+    // large reciprocals
+    double relTol = tol * static_cast<double>(max(M, N))
+                        * reduce_all<af_max_t, Tr, Tr>(sVec);
+    Array<T> relTolArr = createValueArray<T>(sVecCast.dims(), scalar<T>(relTol));
     Array<T> ones = createValueArray<T>(sVecCast.dims(), scalar<T>(1.));
     Array<T> sVecRecip = arithOp<T, af_div_t>(ones, sVecCast, sVecCast.dims());
+    Array<char> cond = logicOp<T, af_ge_t>(sVecCast, relTolArr,
+                                           sVecCast.dims());
+    Array<T> zeros = createValueArray<T>(sVecCast.dims(), scalar<T>(0.));
+    sVecRecip = createSelectNode<T>(cond, sVecRecip, zeros, sVecRecip.dims());
+    sVecRecip.eval();
+
+    // Make s vector into s pinverse array
     Array<T> sPinv = diagCreate<T>(sVecRecip, 0);
 
     Array<T> uT = transpose(u, true);

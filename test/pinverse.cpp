@@ -188,3 +188,29 @@ TEST(Pinverse, Dim1GtDim0) {
     ASSERT_ARRAYS_NEAR(in, out, eps<float>());
 }
 
+TEST(Pinverse, SmallSigValExists) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    const dim_t dim0 = in.dims(0);
+    const dim_t dim1 = in.dims(1);
+
+    // Generate sigma with small non-zero value
+    af::array u;
+    af::array vT;
+    af::array sVec;
+    af::svd(u, sVec, vT, in);
+    dim_t sSize = sVec.elements();
+
+    sVec(2) = 1e-10;
+    af::array s = af::diag(sVec, 0, false);
+    af::array zeros = af::constant(0,
+                                   dim0 > sSize ? dim0 - sSize : sSize,
+                                   dim1 > sSize ? dim1 - sSize : sSize);
+    s = af::join(dim0 > dim1 ? 0 : 1, s, zeros);
+
+    // Make new input array that has a small non-zero value in its SVD sigma
+    in = af::matmul(u, s, vT);
+    array inpinv = pinverse(in, 1e-6);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
+}
+
