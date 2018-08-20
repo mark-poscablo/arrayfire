@@ -31,7 +31,7 @@
 using af::dim4;
 using namespace detail;
 
-const double dfltTol = 1e-9;
+const double dfltTol = 1e-6;
 
 template<typename T>
 void adjustVU(Array<T>& v, Array<T>& uT, const Array<T>& sPinv) {
