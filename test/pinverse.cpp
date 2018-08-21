@@ -19,9 +19,11 @@
 using af::array;
 using af::cdouble;
 using af::cfloat;
+using af::constant;
 using af::dim4;
 using af::dtype;
 using af::dtype_traits;
+using af::exception;
 using af::identity;
 using af::matmul;
 using af::max;
@@ -152,7 +154,7 @@ TEST(Pinverse, CustomTol) {
 TEST(Pinverse, C) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     af_array inpinv = 0, out = 0;
-    af_pinverse(&inpinv, in.get(), -1, AF_MAT_NONE);
+    af_pinverse(&inpinv, in.get(), 1e-6, AF_MAT_NONE);
     af_matmul(&out, in.get(), inpinv, AF_MAT_NONE, AF_MAT_NONE);
     af_matmul(&out, out, in.get(), AF_MAT_NONE, AF_MAT_NONE);
 
@@ -196,6 +198,14 @@ TEST(Pinverse, Dim1GtDim0) {
     ASSERT_ARRAYS_NEAR(in, out, eps<float>());
 }
 
+TYPED_TEST(Pinverse, DISABLED_Large) {
+    array in = randu(2000, 1750,
+                     (af::dtype) af::dtype_traits<TypeParam>::af_type);
+    array inpinv = pinverse(in);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<TypeParam>());
+}
+
 TEST(Pinverse, SmallSigValExistsFloat) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     const dim_t dim0 = in.dims(0);
@@ -229,31 +239,48 @@ TEST(Pinverse, SmallSigValExistsDouble) {
     const dim_t dim1 = in.dims(1);
 
     // Generate sigma with small non-zero value
-    af::array u;
-    af::array vT;
-    af::array sVec;
-    af::svd(u, sVec, vT, in);
+    array u;
+    array vT;
+    array sVec;
+    svd(u, sVec, vT, in);
     dim_t sSize = sVec.elements();
 
-    sVec(2) = (double) 1e-12;
-    af::array s = af::diag(sVec, 0, false);
-    af::array zeros = af::constant(0,
+    sVec(2) = (double) 1e-16;
+    array s = diag(sVec, 0, false);
+    array zeros = constant(0,
                                    dim0 > sSize ? dim0 - sSize : sSize,
                                    dim1 > sSize ? dim1 - sSize : sSize,
                                    f64);
-    s = af::join(dim0 > dim1 ? 0 : 1, s, zeros);
+    s = join(dim0 > dim1 ? 0 : 1, s, zeros);
 
     // Make new input array that has a small non-zero value in its SVD sigma
-    in = af::matmul(u, s, vT);
-    array inpinv = pinverse(in, 1e-12);
+    in = matmul(u, s, vT);
+    array inpinv = pinverse(in, 1e-15);
     array out = matmul(in, inpinv, in);
 
     ASSERT_ARRAYS_NEAR(in, out, eps<double>());
 }
 
-TEST(Pinverse, NegativeTolRevertToDflt) {
+TEST(Pinverse, NegativeTol) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
-    array out = pinverse(in);
-    array outNegTol = pinverse(in, -1.f);
-    ASSERT_ARRAYS_NEAR(out, outNegTol, eps<float>());
+    array out;
+    ASSERT_THROW(out = pinverse(in, -1.f), exception);
+}
+
+TEST(Pinverse, InvalidType) {
+    array in = constant(0, 10, 8, u8);
+    array out;
+    ASSERT_THROW(out = pinverse(in, -1.f), exception);
+}
+
+TEST(Pinverse, TooManyDims) {
+    array in = constant(0.f, 10, 8, 2, f32);
+    array out;
+    ASSERT_THROW(out = pinverse(in, -1.f), exception);
+}
+
+TEST(Pinverse, InvalidMatProp) {
+    array in = constant(0.f, 10, 8, f32);
+    array out;
+    ASSERT_THROW(out = pinverse(in, -1.f, AF_MAT_SYM), exception);
 }

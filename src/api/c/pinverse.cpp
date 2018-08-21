@@ -127,6 +127,7 @@ af_err af_pinverse(af_array *out, const af_array in, const double tol,
         }
 
         ARG_ASSERT(1, i_info.isFloating()); // Only floating and complex types
+        ARG_ASSERT(2, tol >= 0.); // Only floating and complex types
 
         af_array output;
 
@@ -134,15 +135,11 @@ af_err af_pinverse(af_array *out, const af_array in, const double tol,
             return af_retain_array(out, in);
         }
 
-        double validTol = tol;
-        if (validTol < 0.) {
-            validTol = dfltTol;
-        }
         switch(type) {
-            case f32: output = pinverse<float  >(in, validTol);  break;
-            case f64: output = pinverse<double >(in, validTol);  break;
-            case c32: output = pinverse<cfloat >(in, validTol);  break;
-            case c64: output = pinverse<cdouble>(in, validTol);  break;
+            case f32: output = pinverse<float  >(in, tol);  break;
+            case f64: output = pinverse<double >(in, tol);  break;
+            case c32: output = pinverse<cfloat >(in, tol);  break;
+            case c64: output = pinverse<cdouble>(in, tol);  break;
             default:  TYPE_ERROR(1, type);
         }
         std::swap(*out, output);
