@@ -291,3 +291,12 @@ TEST(Pinverse, InvalidMatProp) {
     array out;
     ASSERT_THROW(out = pinverse(in, -1.f, AF_MAT_SYM), exception);
 }
+
+TEST(Pinverse, Batching) {
+    // array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    array in = randu(10, 8, 2);
+    af_print(in);
+    array out = pinverse(in);
+    af_print(out);
+    ASSERT_TRUE(true);
+}

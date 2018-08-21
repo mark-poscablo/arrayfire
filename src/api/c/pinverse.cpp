@@ -21,6 +21,7 @@
 #include <common/err_common.hpp>
 #include <diagonal.hpp>
 #include <handle.hpp>
+#include <join.hpp>
 #include <logic.hpp>
 #include <math.hpp>
 #include <reduce.hpp>
@@ -29,6 +30,7 @@
 #include <transpose.hpp>
 
 using af::dim4;
+using std::vector;
 using namespace detail;
 
 const double dfltTol = 1e-6;
@@ -102,7 +104,26 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
 template<typename T>
 static inline af_array pinverse(const af_array in, const double tol)
 {
-    return getHandle(pinverseSvd<T>(getArray<T>(in), tol));
+    Array<T> inArray = getArray<T>(in);
+    uint batchSize = inArray.dims()[2];
+
+    if (inArray.ndims() < 3) {
+        return getHandle(pinverseSvd<T>(getArray<T>(in), tol));
+    }
+    else {
+        vector<Array<T> > outputs;
+        for (int i = 0; i < batchSize; ++i) {
+            vector<af_seq> seqs = {
+                {0., static_cast<double>(inArray.dims()[0] - 1), 1.},
+                {0., static_cast<double>(inArray.dims()[1] - 1), 1.},
+                {static_cast<double>(i), static_cast<double>(i), 1.}
+            };
+            Array<T> inSlice = createSubArray<T>(inArray, seqs);
+            outputs.push_back(pinverseSvd<T>(inSlice, tol));
+        }
+        Array<T> mergedOuts = join<T>(2, outputs);
+        return getHandle(mergedOuts);
+    }
 }
 
 af_err af_pinverse(af_array *out, const af_array in, const double tol,
@@ -111,7 +132,7 @@ af_err af_pinverse(af_array *out, const af_array in, const double tol,
     try {
         const ArrayInfo& i_info = getInfo(in);
 
-        if (i_info.ndims() > 2) {
+        if (i_info.ndims() > 3) {
             AF_ERROR("solve can not be used in batch mode", AF_ERR_BATCH);
         }
 
