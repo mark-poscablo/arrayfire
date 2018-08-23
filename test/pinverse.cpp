@@ -30,6 +30,7 @@ using af::matmul;
 using af::max;
 using af::pinverse;
 using af::randu;
+using af::span;
 using std::abs;
 using std::string;
 using std::vector;
@@ -156,7 +157,7 @@ TYPED_TEST(Pinverse, Large) {
     array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse640x480.test"));
     array inpinv = pinverse(in);
     array out = matmul(in, inpinv, in);
-    ASSERT_ARRAYS_NEAR(in, out, relEps<TypeParam>(out));
+    ASSERT_ARRAYS_NEAR(in, out, relEps<TypeParam>(in));
 }
 
 TEST(Pinverse, CustomTol) {
@@ -196,7 +197,7 @@ TEST(Pinverse, CompareWithNumpy) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array gold = readTestGold<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array out = pinverse(in);
-    ASSERT_ARRAYS_NEAR(gold, out, eps<float>());
+    ASSERT_ARRAYS_NEAR(gold, out, relEps<float>(gold));
 }
 
 TEST(Pinverse, Square) {
@@ -255,9 +256,9 @@ TEST(Pinverse, SmallSigValExistsDouble) {
     sVec(2) = (double) 1e-16;
     array s = diag(sVec, 0, false);
     array zeros = constant(0,
-                                   dim0 > sSize ? dim0 - sSize : sSize,
-                                   dim1 > sSize ? dim1 - sSize : sSize,
-                                   f64);
+                           dim0 > sSize ? dim0 - sSize : sSize,
+                           dim1 > sSize ? dim1 - sSize : sSize,
+                           f64);
     s = join(dim0 > dim1 ? 0 : 1, s, zeros);
 
     // Make new input array that has a small non-zero value in its SVD sigma
@@ -293,10 +294,14 @@ TEST(Pinverse, InvalidMatProp) {
 }
 
 TEST(Pinverse, Batching) {
-    // array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
-    array in = randu(10, 8, 2);
-    af_print(in);
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8x2.test"));
+    array inpinv0 = pinverse(in(span, span, 0));
+    array inpinv1 = pinverse(in(span, span, 1));
+
     array out = pinverse(in);
-    af_print(out);
-    ASSERT_TRUE(true);
+    array out0 = out(span, span, 0);
+    array out1 = out(span, span, 1);
+
+    ASSERT_ARRAYS_NEAR(inpinv0, out0, eps<float>());
+    ASSERT_ARRAYS_NEAR(inpinv1, out1, eps<float>());
 }
