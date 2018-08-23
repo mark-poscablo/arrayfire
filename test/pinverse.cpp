@@ -15,6 +15,7 @@
 #include <iostream>
 #include <complex>
 #include <testHelpers.hpp>
+#include <limits>
 
 using af::array;
 using af::cdouble;
@@ -108,6 +109,13 @@ double eps<cdouble>() {
     return 1e-5;
 }
 
+template<typename T>
+double relEps(array in) {
+    typedef typename af::dtype_traits<T>::base_type InBaseType;
+    return std::numeric_limits<InBaseType>::epsilon()
+        * std::max(in.dims(0), in.dims(1)) * af::max<double>(in);
+}
+
 typedef ::testing::Types<float, cfloat, double, cdouble> TestTypes;
 TYPED_TEST_CASE(Pinverse, TestTypes);
 
@@ -142,6 +150,13 @@ TYPED_TEST(Pinverse, ApinvA_IsHermitian) {
     array apinva = af::matmul(inpinv, in);
     array out = af::matmul(inpinv, in).H();
     ASSERT_ARRAYS_NEAR(apinva, out, eps<TypeParam>());
+}
+
+TYPED_TEST(Pinverse, Large) {
+    array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse640x480.test"));
+    array inpinv = pinverse(in);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, relEps<TypeParam>(out));
 }
 
 TEST(Pinverse, CustomTol) {
@@ -196,14 +211,6 @@ TEST(Pinverse, Dim1GtDim0) {
     array inpinv = pinverse(in);
     array out = matmul(in, inpinv, in);
     ASSERT_ARRAYS_NEAR(in, out, eps<float>());
-}
-
-TYPED_TEST(Pinverse, DISABLED_Large) {
-    array in = randu(2000, 1750,
-                     (af::dtype) af::dtype_traits<TypeParam>::af_type);
-    array inpinv = pinverse(in);
-    array out = matmul(in, inpinv, in);
-    ASSERT_ARRAYS_NEAR(in, out, eps<TypeParam>());
 }
 
 TEST(Pinverse, SmallSigValExistsFloat) {

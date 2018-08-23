@@ -34,24 +34,6 @@ using namespace detail;
 const double dfltTol = 1e-6;
 
 template<typename T>
-void adjustVU(Array<T>& v, Array<T>& uT, const Array<T>& sPinv) {
-    if (v.dims()[1] > sPinv.dims()[0]) {
-        std::vector<af_seq> seqs = {
-            {0., static_cast<double>(v.dims()[0] - 1), 1.},
-            {0., static_cast<double>(sPinv.dims()[0] - 1), 1.}
-        };
-        v = createSubArray<T>(v, seqs);
-    }
-    if (uT.dims()[0] > sPinv.dims()[1]) {
-        std::vector<af_seq> seqs = {
-            {0., static_cast<double>(sPinv.dims()[1] - 1), 1.},
-            {0., static_cast<double>(uT.dims()[1] - 1), 1.}
-        };
-        uT = createSubArray<T>(uT, seqs);
-    }
-}
-
-template<typename T>
 Array<T> pinverseSvd(const Array<T> &in, const double tol)
 {
     // Moore-Penrose Pseudoinverse
@@ -96,7 +78,20 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     // sVec produced by svd() has minimal dim length (no extra zeroes).
     // Thus s+ produced by diagCreate() will have minimal dims as well,
     // and v could have an extra dim0 or u* could have an extra dim1
-    adjustVU(v, uT, sPinv);
+    if (v.dims()[1] > sPinv.dims()[0]) {
+        std::vector<af_seq> seqs = {
+            {0., static_cast<double>(v.dims()[0] - 1), 1.},
+            {0., static_cast<double>(sPinv.dims()[0] - 1), 1.}
+        };
+        v = createSubArray<T>(v, seqs);
+    }
+    if (uT.dims()[0] > sPinv.dims()[1]) {
+        std::vector<af_seq> seqs = {
+            {0., static_cast<double>(sPinv.dims()[1] - 1), 1.},
+            {0., static_cast<double>(uT.dims()[1] - 1), 1.}
+        };
+        uT = createSubArray<T>(uT, seqs);
+    }
 
     Array<T> out = matmul<T>(matmul<T>(v, sPinv, AF_MAT_NONE, AF_MAT_NONE),
                              uT, AF_MAT_NONE, AF_MAT_NONE);
