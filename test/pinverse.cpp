@@ -160,46 +160,6 @@ TYPED_TEST(Pinverse, Large) {
     ASSERT_ARRAYS_NEAR(in, out, relEps<TypeParam>(in));
 }
 
-TEST(Pinverse, CustomTol) {
-    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
-    array inpinv = pinverse(in, 1e-12);
-    array out = matmul(in, inpinv, in);
-    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
-}
-
-TEST(Pinverse, C) {
-    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
-    af_array inpinv = 0, out = 0;
-    af_pinverse(&inpinv, in.get(), 1e-6, AF_MAT_NONE);
-    af_matmul(&out, in.get(), inpinv, AF_MAT_NONE, AF_MAT_NONE);
-    af_matmul(&out, out, in.get(), AF_MAT_NONE, AF_MAT_NONE);
-
-    ASSERT_ARRAYS_NEAR(in.get(), out, eps<float>());
-
-    af_release_array(out);
-    af_release_array(inpinv);
-}
-
-TEST(Pinverse, C_CustomTol) {
-    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
-    af_array inpinv = 0, out = 0;
-    af_pinverse(&inpinv, in.get(), 1e-12, AF_MAT_NONE);
-    af_matmul(&out, in.get(), inpinv, AF_MAT_NONE, AF_MAT_NONE);
-    af_matmul(&out, out, in.get(), AF_MAT_NONE, AF_MAT_NONE);
-
-    ASSERT_ARRAYS_NEAR(in.get(), out, eps<float>());
-
-    af_release_array(out);
-    af_release_array(inpinv);
-}
-
-TEST(Pinverse, CompareWithNumpy) {
-    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
-    array gold = readTestGold<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
-    array out = pinverse(in);
-    ASSERT_ARRAYS_NEAR(gold, out, relEps<float>(gold));
-}
-
 TEST(Pinverse, Square) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x10.test"));
     array inpinv = pinverse(in);
@@ -212,6 +172,13 @@ TEST(Pinverse, Dim1GtDim0) {
     array inpinv = pinverse(in);
     array out = matmul(in, inpinv, in);
     ASSERT_ARRAYS_NEAR(in, out, eps<float>());
+}
+
+TEST(Pinverse, CompareWithNumpy) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    array gold = readTestGold<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    array out = pinverse(in);
+    ASSERT_ARRAYS_NEAR(gold, out, relEps<float>(gold));
 }
 
 TEST(Pinverse, SmallSigValExistsFloat) {
@@ -269,6 +236,52 @@ TEST(Pinverse, SmallSigValExistsDouble) {
     ASSERT_ARRAYS_NEAR(in, out, eps<double>());
 }
 
+TEST(Pinverse, Batching) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8x2.test"));
+    array inpinv0 = pinverse(in(span, span, 0));
+    array inpinv1 = pinverse(in(span, span, 1));
+
+    array out = pinverse(in);
+    array out0 = out(span, span, 0);
+    array out1 = out(span, span, 1);
+
+    ASSERT_ARRAYS_NEAR(inpinv0, out0, eps<float>());
+    ASSERT_ARRAYS_NEAR(inpinv1, out1, eps<float>());
+}
+
+TEST(Pinverse, CustomTol) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    array inpinv = pinverse(in, 1e-12);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
+}
+
+TEST(Pinverse, C) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    af_array inpinv = 0, out = 0;
+    af_pinverse(&inpinv, in.get(), 1e-6, AF_MAT_NONE);
+    af_matmul(&out, in.get(), inpinv, AF_MAT_NONE, AF_MAT_NONE);
+    af_matmul(&out, out, in.get(), AF_MAT_NONE, AF_MAT_NONE);
+
+    ASSERT_ARRAYS_NEAR(in.get(), out, eps<float>());
+
+    af_release_array(out);
+    af_release_array(inpinv);
+}
+
+TEST(Pinverse, C_CustomTol) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
+    af_array inpinv = 0, out = 0;
+    af_pinverse(&inpinv, in.get(), 1e-12, AF_MAT_NONE);
+    af_matmul(&out, in.get(), inpinv, AF_MAT_NONE, AF_MAT_NONE);
+    af_matmul(&out, out, in.get(), AF_MAT_NONE, AF_MAT_NONE);
+
+    ASSERT_ARRAYS_NEAR(in.get(), out, eps<float>());
+
+    af_release_array(out);
+    af_release_array(inpinv);
+}
+
 TEST(Pinverse, NegativeTol) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array out;
@@ -291,17 +304,4 @@ TEST(Pinverse, InvalidMatProp) {
     array in = constant(0.f, 10, 8, f32);
     array out;
     ASSERT_THROW(out = pinverse(in, -1.f, AF_MAT_SYM), exception);
-}
-
-TEST(Pinverse, Batching) {
-    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8x2.test"));
-    array inpinv0 = pinverse(in(span, span, 0));
-    array inpinv1 = pinverse(in(span, span, 1));
-
-    array out = pinverse(in);
-    array out0 = out(span, span, 0);
-    array out1 = out(span, span, 1);
-
-    ASSERT_ARRAYS_NEAR(inpinv0, out0, eps<float>());
-    ASSERT_ARRAYS_NEAR(inpinv1, out1, eps<float>());
 }
