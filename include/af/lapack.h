@@ -200,6 +200,7 @@ namespace af
     */
     AFAPI array inverse(const array &in, const matProp options = AF_MAT_NONE);
 
+#if AF_API_VERSION >= 37
     /**
        C++ Interface for pseudo-inverting (Moore-Penrose) a non-square matrix
        Currently uses the SVD-based approach
@@ -218,6 +219,7 @@ namespace af
     */
     AFAPI array pinverse(const array &in, const double tol=1E-6,
                          const matProp options = AF_MAT_NONE);
+#endif
 
     /**
        C++ Interface for finding the rank of a matrix
@@ -420,6 +422,7 @@ extern "C" {
     */
     AFAPI af_err af_inverse(af_array *out, const af_array in, const af_mat_prop options);
 
+#if AF_API_VERSION >= 37
     /**
        C Interface for pseudo-inverting (Moore-Penrose) a non-square matrix
        Currently uses the SVD-based approach
@@ -438,6 +441,7 @@ extern "C" {
     */
     AFAPI af_err af_pinverse(af_array *out, const af_array in, const double tol,
                              const af_mat_prop options);
+#endif
 
     /**
        C Interface for finding the rank of a matrix

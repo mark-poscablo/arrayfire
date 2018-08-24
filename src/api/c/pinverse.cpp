@@ -30,7 +30,10 @@
 #include <transpose.hpp>
 
 using af::dim4;
+using af::dtype_traits;
 using std::vector;
+using std::swap;
+
 using namespace detail;
 
 const double dfltTol = 1e-6;
@@ -45,7 +48,7 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     int N = in.dims()[1];
 
     // Compute SVD
-    typedef typename af::dtype_traits<T>::base_type Tr;
+    typedef typename dtype_traits<T>::base_type Tr;
     Array<Tr> sVec = createEmptyArray<Tr>(dim4(min(M, N)));
     Array<T> u = createEmptyArray<T>(dim4(M, M));
     Array<T> vT = createEmptyArray<T>(dim4(N, N));
@@ -81,14 +84,14 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     // Thus s+ produced by diagCreate() will have minimal dims as well,
     // and v could have an extra dim0 or u* could have an extra dim1
     if (v.dims()[1] > sPinv.dims()[0]) {
-        std::vector<af_seq> seqs = {
+        vector<af_seq> seqs = {
             {0., static_cast<double>(v.dims()[0] - 1), 1.},
             {0., static_cast<double>(sPinv.dims()[0] - 1), 1.}
         };
         v = createSubArray<T>(v, seqs);
     }
     if (uT.dims()[0] > sPinv.dims()[1]) {
-        std::vector<af_seq> seqs = {
+        vector<af_seq> seqs = {
             {0., static_cast<double>(sPinv.dims()[1] - 1), 1.},
             {0., static_cast<double>(uT.dims()[1] - 1), 1.}
         };
@@ -158,7 +161,7 @@ af_err af_pinverse(af_array *out, const af_array in, const double tol,
             case c64: output = pinverse<cdouble>(in, tol);  break;
             default:  TYPE_ERROR(1, type);
         }
-        std::swap(*out, output);
+        swap(*out, output);
     }
     CATCHALL;
 
