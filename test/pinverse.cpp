@@ -305,3 +305,23 @@ TEST(Pinverse, InvalidMatProp) {
     array out;
     ASSERT_THROW(out = pinverse(in, -1.f, AF_MAT_SYM), exception);
 }
+
+TEST(Pinverse, DocSnippet) {
+    float hA[] = {0, 1, 2, 3, 4, 5};
+    //! [ex_pinverse]
+    array A(3, 2, hA);
+    //  0.0000     3.0000
+    //  1.0000     4.0000
+    //  2.0000     5.0000
+
+    array Apinv = pinverse(A);
+    // -0.7778    -0.1111     0.5556
+    //  0.2778     0.1111    -0.0556
+
+    array MustBeA = matmul(A, Apinv, A);
+    //  0.0000     3.0000
+    //  1.0000     4.0000
+    //  2.0000     5.0000
+    //! [ex_pinverse]
+    ASSERT_ARRAYS_NEAR(A, MustBeA, eps<float>());
+}

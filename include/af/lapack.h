@@ -202,20 +202,19 @@ namespace af
 
 #if AF_API_VERSION >= 37
     /**
-       C++ Interface for pseudo-inverting (Moore-Penrose) a non-square matrix
-       Currently uses the SVD-based approach
+       C++ Interface for pseudo-inverting (Moore-Penrose) a matrix.
+       Currently uses the SVD-based approach.
 
-       \param[in] in is input matrix
-       \param[in] tol defines the lower threshold for singular values from SVD \p in
+       \param[in] in is the input matrix
+       \param[in] tol defines the lower threshold for singular values from SVD
        \param[in] options determining various properties of matrix \p in
        \returns \p x, the inverse of the input matrix
 
        \note \p tol is not the actual lower threshold, but it is passed in as a parameter to the calculation of the actual threshold relative to the shape and contents of \p in.
-       \note Passing in negative values to \p tol will revert it to the default value, 1e-6. When using double precision types, you can set \p even lower, such as 1e-12.
        \note \p options currently needs to be \ref AF_MAT_NONE
        \note This function is not supported in GFOR
 
-       \ingroup lapack_ops_func_inv
+       \ingroup lapack_ops_func_pinv
     */
     AFAPI array pinverse(const array &in, const double tol=1E-6,
                          const matProp options = AF_MAT_NONE);
@@ -424,20 +423,20 @@ extern "C" {
 
 #if AF_API_VERSION >= 37
     /**
-       C Interface for pseudo-inverting (Moore-Penrose) a non-square matrix
-       Currently uses the SVD-based approach
+       C Interface for pseudo-inverting (Moore-Penrose) a matrix.
+       Currently uses the SVD-based approach.
 
        \param[out] out will contain the pseudo-inverse of matrix \p in
-       \param[in] in is input matrix
-       \param[in] tol defines the lower threshold for singular values from SVD \p in
+       \param[in] in is the input matrix
+       \param[in] tol defines the lower threshold for singular values from SVD
        \param[in] options determining various properties of matrix \p in
 
        \note \p tol is not the actual lower threshold, but it is passed in as a parameter to the calculation of the actual threshold relative to the shape and contents of \p in.
-       \note At first, try setting \p tol to 1e-6 for single precision and 1e-12 for double. Passing in negative values will revert it to 1e-6.
+       \note At first, try setting \p tol to 1e-6 for single precision and 1e-12 for double.
        \note \p options currently needs to be \ref AF_MAT_NONE
        \note This function is not supported in GFOR
 
-       \ingroup lapack_ops_func_inv
+       \ingroup lapack_ops_func_pinv
     */
     AFAPI af_err af_pinverse(af_array *out, const af_array in, const double tol,
                              const af_mat_prop options);
