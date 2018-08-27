@@ -30,6 +30,7 @@ using af::dtype_traits;
 using af::identity;
 using af::matmul;
 using af::max;
+using af::randu;
 
 template<typename T>
 void inverseTester(const int m, const int n, const int k, double eps)
@@ -92,4 +93,11 @@ TYPED_TEST(Inverse, Square) {
 
 TYPED_TEST(Inverse, SquareMultiplePowerOfTwo) {
     inverseTester<TypeParam>(2048, 2048, 512, eps<TypeParam>());
+}
+
+TEST(Inverse, FallbackToPinverseForNonsquareMat) {
+    array in = 1000 * randu(10, 8);
+    array inpinv = inverse(in, AF_MAT_NONE, true);
+    array out = matmul(in, inpinv, in);
+    ASSERT_ARRAYS_NEAR(in, out, eps<float>());
 }

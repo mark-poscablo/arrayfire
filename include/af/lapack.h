@@ -198,7 +198,8 @@ namespace af
 
        \ingroup lapack_ops_func_inv
     */
-    AFAPI array inverse(const array &in, const matProp options = AF_MAT_NONE);
+    AFAPI array inverse(const array &in, const matProp options = AF_MAT_NONE,
+                        const bool pinverseNonsquare = false);
 
 #if AF_API_VERSION >= 37
     /**
@@ -419,7 +420,8 @@ extern "C" {
 
        \note currently options needs to be \ref AF_MAT_NONE
     */
-    AFAPI af_err af_inverse(af_array *out, const af_array in, const af_mat_prop options);
+    AFAPI af_err af_inverse(af_array *out, const af_array in, const af_mat_prop options,
+                            const bool pinverse_nonsquare);
 
 #if AF_API_VERSION >= 37
     /**

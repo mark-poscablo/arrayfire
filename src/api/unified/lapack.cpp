@@ -73,10 +73,11 @@ af_err af_solve_lu(af_array *x, const af_array a, const af_array piv,
     return CALL(x, a, piv, b, options);
 }
 
-af_err af_inverse(af_array *out, const af_array in, const af_mat_prop options)
+af_err af_inverse(af_array *out, const af_array in, const af_mat_prop options,
+                  const bool pinverse_nonsquare)
 {
     CHECK_ARRAYS(in);
-    return CALL(out, in, options);
+    return CALL(out, in, options, pinverse_nonsquare);
 }
 
 af_err af_pinverse(af_array *out, const af_array in, const double tol,

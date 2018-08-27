@@ -25,7 +25,8 @@ static inline af_array inverse(const af_array in)
     return getHandle(inverse<T>(getArray<T>(in)));
 }
 
-af_err af_inverse(af_array *out, const af_array in, const af_mat_prop options)
+af_err af_inverse(af_array *out, const af_array in, const af_mat_prop options,
+                  const bool pinverse_nonsquare)
 {
     try {
         const ArrayInfo& i_info = getInfo(in);
@@ -38,6 +39,11 @@ af_err af_inverse(af_array *out, const af_array in, const af_mat_prop options)
 
         if (options != AF_MAT_NONE) {
             AF_ERROR("Using this property is not yet supported in inverse", AF_ERR_NOT_SUPPORTED);
+        }
+
+        // If desired by user, fallback to pinverse if matrix is non-square
+        if (pinverse_nonsquare && (i_info.dims()[0] != i_info.dims()[1])) {
+            return af_pinverse(out, in, 1e-6, options);
         }
 
         DIM_ASSERT(1, i_info.dims()[0] == i_info.dims()[1]);      // Only square matrices

@@ -110,10 +110,10 @@ namespace af
         return array(out);
     }
 
-    array inverse(const array &in, const matProp options)
+    array inverse(const array &in, const matProp options, const bool pinverseNonSquare)
     {
         af_array out;
-        AF_THROW(af_inverse(&out, in.get(), options));
+        AF_THROW(af_inverse(&out, in.get(), options, pinverseNonSquare));
         return array(out);
     }
 
