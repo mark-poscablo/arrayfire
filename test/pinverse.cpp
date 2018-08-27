@@ -1,5 +1,5 @@
 /*******************************************************
- * Copyright (c) 2014, ArrayFire
+ * Copyright (c) 2018, ArrayFire
  * All rights reserved.
  *
  * This file is distributed under 3-clause BSD license.
@@ -120,9 +120,8 @@ double relEps(array in) {
 typedef ::testing::Types<float, cfloat, double, cdouble> TestTypes;
 TYPED_TEST_CASE(Pinverse, TestTypes);
 
-// Test Moore-Penrose conditions
+// Test Moore-Penrose conditions in the following first 4 tests
 // See https://en.wikipedia.org/wiki/Moore%E2%80%93Penrose_inverse#Definition
-
 TYPED_TEST(Pinverse, AApinvA_A) {
     array in = readTestInput<TypeParam>(string(TEST_DIR"/pinverse/pinverse10x8.test"));
     array inpinv = pinverse(in);
@@ -236,7 +235,7 @@ TEST(Pinverse, SmallSigValExistsDouble) {
     ASSERT_ARRAYS_NEAR(in, out, eps<double>());
 }
 
-TEST(Pinverse, Batching) {
+TEST(Pinverse, Batching3D) {
     array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8x2.test"));
     array inpinv0 = pinverse(in(span, span, 0));
     array inpinv1 = pinverse(in(span, span, 1));
@@ -247,6 +246,25 @@ TEST(Pinverse, Batching) {
 
     ASSERT_ARRAYS_NEAR(inpinv0, out0, eps<float>());
     ASSERT_ARRAYS_NEAR(inpinv1, out1, eps<float>());
+}
+
+TEST(Pinverse, Batching4D) {
+    array in = readTestInput<float>(string(TEST_DIR"/pinverse/pinverse10x8x2x2.test"));
+    array inpinv00 = pinverse(in(span, span, 0, 0));
+    array inpinv01 = pinverse(in(span, span, 0, 1));
+    array inpinv10 = pinverse(in(span, span, 1, 0));
+    array inpinv11 = pinverse(in(span, span, 1, 1));
+
+    array out = pinverse(in);
+    array out00 = out(span, span, 0, 0);
+    array out01 = out(span, span, 0, 1);
+    array out10 = out(span, span, 1, 0);
+    array out11 = out(span, span, 1, 1);
+
+    ASSERT_ARRAYS_NEAR(inpinv00, out00, eps<float>());
+    ASSERT_ARRAYS_NEAR(inpinv01, out01, eps<float>());
+    ASSERT_ARRAYS_NEAR(inpinv10, out10, eps<float>());
+    ASSERT_ARRAYS_NEAR(inpinv11, out11, eps<float>());
 }
 
 TEST(Pinverse, CustomTol) {
@@ -294,12 +312,6 @@ TEST(Pinverse, InvalidType) {
     ASSERT_THROW(out = pinverse(in, -1.f), exception);
 }
 
-TEST(Pinverse, TooManyDims) {
-    array in = constant(0.f, 10, 8, 2, f32);
-    array out;
-    ASSERT_THROW(out = pinverse(in, -1.f), exception);
-}
-
 TEST(Pinverse, InvalidMatProp) {
     array in = constant(0.f, 10, 8, f32);
     array out;
@@ -307,8 +319,8 @@ TEST(Pinverse, InvalidMatProp) {
 }
 
 TEST(Pinverse, DocSnippet) {
-    float hA[] = {0, 1, 2, 3, 4, 5};
     //! [ex_pinverse]
+    float hA[] = {0, 1, 2, 3, 4, 5};
     array A(3, 2, hA);
     //  0.0000     3.0000
     //  1.0000     4.0000

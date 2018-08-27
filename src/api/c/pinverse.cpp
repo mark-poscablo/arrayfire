@@ -1,5 +1,5 @@
 /*******************************************************
- * Copyright (c) 2014, ArrayFire
+ * Copyright (c) 2018, ArrayFire
  * All rights reserved.
  *
  * This file is distributed under 3-clause BSD license.
@@ -38,11 +38,10 @@ using namespace detail;
 
 const double dfltTol = 1e-6;
 
+// Moore-Penrose Pseudoinverse
 template<typename T>
 Array<T> pinverseSvd(const Array<T> &in, const double tol)
 {
-    // Moore-Penrose Pseudoinverse
-
     in.eval();
     int M = in.dims()[0];
     int N = in.dims()[1];
@@ -104,29 +103,41 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     return out;
 }
 
+// Naive batching for now
+template<typename T>
+Array<T> batchedPinverse(const Array<T> &in, const double tol) {
+    uint dim2 = in.dims()[2];
+    uint dim3 = in.dims()[3];
+
+    if (in.ndims() <= 2) {
+        return pinverseSvd<T>(in, tol);
+    }
+    else {
+        vector<Array<T> > finalOutputs;
+        for (int j = 0; j < dim3; ++j) {
+            vector<Array<T> > outputs;
+            for (int i = 0; i < dim2; ++i) {
+                vector<af_seq> seqs = {
+                    {0., static_cast<double>(in.dims()[0] - 1), 1.},
+                    {0., static_cast<double>(in.dims()[1] - 1), 1.},
+                    {static_cast<double>(i), static_cast<double>(i), 1.},
+                    {static_cast<double>(j), static_cast<double>(j), 1.}
+                };
+                Array<T> inSlice = createSubArray<T>(in, seqs);
+                outputs.push_back(pinverseSvd<T>(inSlice, tol));
+            }
+            Array<T> mergedOuts = join<T>(2, outputs);
+            finalOutputs.push_back(mergedOuts);
+        }
+        Array<T> finalMergedOuts = join<T>(3, finalOutputs);
+        return finalMergedOuts;
+    }
+}
+
 template<typename T>
 static inline af_array pinverse(const af_array in, const double tol)
 {
-    Array<T> inArray = getArray<T>(in);
-    uint batchSize = inArray.dims()[2];
-
-    if (inArray.ndims() < 3) {
-        return getHandle(pinverseSvd<T>(getArray<T>(in), tol));
-    }
-    else {
-        vector<Array<T> > outputs;
-        for (int i = 0; i < batchSize; ++i) {
-            vector<af_seq> seqs = {
-                {0., static_cast<double>(inArray.dims()[0] - 1), 1.},
-                {0., static_cast<double>(inArray.dims()[1] - 1), 1.},
-                {static_cast<double>(i), static_cast<double>(i), 1.}
-            };
-            Array<T> inSlice = createSubArray<T>(inArray, seqs);
-            outputs.push_back(pinverseSvd<T>(inSlice, tol));
-        }
-        Array<T> mergedOuts = join<T>(2, outputs);
-        return getHandle(mergedOuts);
-    }
+    return getHandle(batchedPinverse<T>(getArray<T>(in), tol));
 }
 
 af_err af_pinverse(af_array *out, const af_array in, const double tol,
@@ -135,10 +146,6 @@ af_err af_pinverse(af_array *out, const af_array in, const double tol,
     try {
         const ArrayInfo& i_info = getInfo(in);
 
-        if (i_info.ndims() > 3) {
-            AF_ERROR("solve can not be used in batch mode", AF_ERR_BATCH);
-        }
-
         af_dtype type = i_info.getType();
 
         if (options != AF_MAT_NONE) {
@@ -146,7 +153,7 @@ af_err af_pinverse(af_array *out, const af_array in, const double tol,
         }
 
         ARG_ASSERT(1, i_info.isFloating()); // Only floating and complex types
-        ARG_ASSERT(2, tol >= 0.); // Only floating and complex types
+        ARG_ASSERT(2, tol >= 0.); // Ensure tolerance is not negative
 
         af_array output;
 

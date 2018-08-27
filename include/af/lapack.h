@@ -207,11 +207,13 @@ namespace af
 
        \param[in] in is the input matrix
        \param[in] tol defines the lower threshold for singular values from SVD
-       \param[in] options determining various properties of matrix \p in
-       \returns \p x, the inverse of the input matrix
+       \param[in] options must be AF_MAT_NONE (more options might be supported
+                  in the future)
+       \returns the pseudo-inverse of the input matrix
 
-       \note \p tol is not the actual lower threshold, but it is passed in as a parameter to the calculation of the actual threshold relative to the shape and contents of \p in.
-       \note \p options currently needs to be \ref AF_MAT_NONE
+       \note \p tol is not the actual lower threshold, but it is passed in as
+             a parameter to the calculation of the actual threshold relative to
+             the shape and contents of \p in.
        \note This function is not supported in GFOR
 
        \ingroup lapack_ops_func_pinv
@@ -429,11 +431,14 @@ extern "C" {
        \param[out] out will contain the pseudo-inverse of matrix \p in
        \param[in] in is the input matrix
        \param[in] tol defines the lower threshold for singular values from SVD
-       \param[in] options determining various properties of matrix \p in
+       \param[in] options must be AF_MAT_NONE (more options might be supported
+       in the future)
 
-       \note \p tol is not the actual lower threshold, but it is passed in as a parameter to the calculation of the actual threshold relative to the shape and contents of \p in.
-       \note At first, try setting \p tol to 1e-6 for single precision and 1e-12 for double.
-       \note \p options currently needs to be \ref AF_MAT_NONE
+       \note \p tol is not the actual lower threshold, but it is passed in as a
+             parameter to the calculation of the actual threshold relative to the
+             shape and contents of \p in.
+       \note At first, try setting \p tol to 1e-6 for single precision and 1e-12
+             for double.
        \note This function is not supported in GFOR
 
        \ingroup lapack_ops_func_pinv
