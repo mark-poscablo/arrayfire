@@ -38,6 +38,21 @@ using namespace detail;
 
 const double dfltTol = 1e-6;
 
+template<typename T>
+Array<T> getSubArray(const Array<T> in,
+                       uint dim0begin = 0, uint dim0end = 0,
+                       uint dim1begin = 0, uint dim1end = 0,
+                       uint dim2begin = 0, uint dim2end = 0,
+                       uint dim3begin = 0, uint dim3end = 0) {
+    vector<af_seq> seqs = {
+        {static_cast<double>(dim0begin), static_cast<double>(dim0end), 1.},
+        {static_cast<double>(dim1begin), static_cast<double>(dim1end), 1.},
+        {static_cast<double>(dim2begin), static_cast<double>(dim2end), 1.},
+        {static_cast<double>(dim3begin), static_cast<double>(dim3end), 1.}
+    };
+    return createSubArray<T>(in, seqs, false);
+}
+
 // Moore-Penrose Pseudoinverse
 template<typename T>
 Array<T> pinverseSvd(const Array<T> &in, const double tol)
@@ -83,18 +98,10 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     // Thus s+ produced by diagCreate() will have minimal dims as well,
     // and v could have an extra dim0 or u* could have an extra dim1
     if (v.dims()[1] > sPinv.dims()[0]) {
-        vector<af_seq> seqs = {
-            {0., static_cast<double>(v.dims()[0] - 1), 1.},
-            {0., static_cast<double>(sPinv.dims()[0] - 1), 1.}
-        };
-        v = createSubArray<T>(v, seqs);
+        v = getSubArray(v, 0, v.dims()[0] - 1, 0, sPinv.dims()[0] - 1);
     }
     if (uT.dims()[0] > sPinv.dims()[1]) {
-        vector<af_seq> seqs = {
-            {0., static_cast<double>(sPinv.dims()[1] - 1), 1.},
-            {0., static_cast<double>(uT.dims()[1] - 1), 1.}
-        };
-        uT = createSubArray<T>(uT, seqs);
+        uT = getSubArray(uT, 0, sPinv.dims()[1] - 1, 0, uT.dims()[1] - 1);
     }
 
     Array<T> out = matmul<T>(matmul<T>(v, sPinv, AF_MAT_NONE, AF_MAT_NONE),
