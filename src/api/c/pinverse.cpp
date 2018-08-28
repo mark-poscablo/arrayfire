@@ -39,7 +39,7 @@ using namespace detail;
 const double dfltTol = 1e-6;
 
 template<typename T>
-Array<T> getSubArray(const Array<T> in,
+Array<T> getSubArray(const Array<T> &in,
                        uint dim0begin = 0, uint dim0end = 0,
                        uint dim1begin = 0, uint dim1end = 0,
                        uint dim2begin = 0, uint dim2end = 0,
@@ -60,13 +60,39 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     in.eval();
     int M = in.dims()[0];
     int N = in.dims()[1];
+    int dim2 = in.dims()[2];
+    int dim3 = in.dims()[3];
 
     // Compute SVD
     typedef typename dtype_traits<T>::base_type Tr;
-    Array<Tr> sVec = createEmptyArray<Tr>(dim4(min(M, N)));
-    Array<T> u = createEmptyArray<T>(dim4(M, M));
-    Array<T> vT = createEmptyArray<T>(dim4(N, N));
-    svd<T, Tr>(sVec, u, vT, in);
+    Array<Tr> sVec = createEmptyArray<Tr>(dim4(min(M, N), 1, dim2, dim3));
+    Array<T> u = createEmptyArray<T>(dim4(M, M, dim2, dim3));
+    Array<T> vT = createEmptyArray<T>(dim4(N, N, dim2, dim3));
+    for (uint j = 0; j < dim3; ++j) {
+        for (uint i = 0; i < dim2; ++i) {
+            Array<T> inSlice = getSubArray(in,
+                                           0, in.dims()[0] - 1,
+                                           0, in.dims()[1] - 1,
+                                           i, i,
+                                           j, j);
+            Array<Tr> sVecSlice = getSubArray(sVec,
+                                              0, sVec.dims()[0] - 1,
+                                              0, 0,
+                                              i, i,
+                                              j, j);
+            Array<T> uSlice = getSubArray(u,
+                                          0, u.dims()[0] - 1,
+                                          0, u.dims()[1] - 1,
+                                          i, i,
+                                          j, j);
+            Array<T> vTSlice = getSubArray(vT,
+                                           0, vT.dims()[0] - 1,
+                                           0, vT.dims()[1] - 1,
+                                           i, i,
+                                           j, j);
+            svd<T, Tr>(sVecSlice, uSlice, vTSlice, inSlice);
+        }
+    }
 
     // Cast s back to original data type for matmul later
     // (since svd() makes s' type the base type of T)
@@ -130,7 +156,7 @@ Array<T> batchedPinverse(const Array<T> &in, const double tol) {
                     {static_cast<double>(i), static_cast<double>(i), 1.},
                     {static_cast<double>(j), static_cast<double>(j), 1.}
                 };
-                Array<T> inSlice = createSubArray<T>(in, seqs);
+                Array<T> inSlice = createSubArray<T>(in, seqs, false);
                 outputs.push_back(pinverseSvd<T>(inSlice, tol));
             }
             Array<T> mergedOuts = join<T>(2, outputs);
@@ -144,7 +170,8 @@ Array<T> batchedPinverse(const Array<T> &in, const double tol) {
 template<typename T>
 static inline af_array pinverse(const af_array in, const double tol)
 {
-    return getHandle(batchedPinverse<T>(getArray<T>(in), tol));
+    // return getHandle(batchedPinverse<T>(getArray<T>(in), tol));
+    return getHandle(pinverseSvd<T>(getArray<T>(in), tol));
 }
 
 af_err af_pinverse(af_array *out, const af_array in, const double tol,
