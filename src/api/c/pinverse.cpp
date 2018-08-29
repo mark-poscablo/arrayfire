@@ -21,12 +21,12 @@
 #include <common/err_common.hpp>
 #include <diagonal.hpp>
 #include <handle.hpp>
-#include <join.hpp>
 #include <logic.hpp>
 #include <math.hpp>
 #include <reduce.hpp>
 #include <select.hpp>
 #include <svd.hpp>
+#include <tile.hpp>
 #include <transpose.hpp>
 
 using af::dim4;
@@ -39,7 +39,7 @@ using namespace detail;
 const double dfltTol = 1e-6;
 
 template<typename T>
-Array<T> getSubArray(const Array<T> &in,
+Array<T> getSubArray(const Array<T> &in, const bool copy,
                        uint dim0begin = 0, uint dim0end = 0,
                        uint dim1begin = 0, uint dim1end = 0,
                        uint dim2begin = 0, uint dim2end = 0,
@@ -50,7 +50,7 @@ Array<T> getSubArray(const Array<T> &in,
         {static_cast<double>(dim2begin), static_cast<double>(dim2end), 1.},
         {static_cast<double>(dim3begin), static_cast<double>(dim3end), 1.}
     };
-    return createSubArray<T>(in, seqs, false);
+    return createSubArray<T>(in, seqs, copy);
 }
 
 // Moore-Penrose Pseudoinverse
@@ -70,22 +70,22 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     Array<T> vT = createEmptyArray<T>(dim4(N, N, dim2, dim3));
     for (uint j = 0; j < dim3; ++j) {
         for (uint i = 0; i < dim2; ++i) {
-            Array<T> inSlice = getSubArray(in,
+            Array<T> inSlice = getSubArray(in, true,
                                            0, in.dims()[0] - 1,
                                            0, in.dims()[1] - 1,
                                            i, i,
                                            j, j);
-            Array<Tr> sVecSlice = getSubArray(sVec,
+            Array<Tr> sVecSlice = getSubArray(sVec, false,
                                               0, sVec.dims()[0] - 1,
                                               0, 0,
                                               i, i,
                                               j, j);
-            Array<T> uSlice = getSubArray(u,
+            Array<T> uSlice = getSubArray(u, false,
                                           0, u.dims()[0] - 1,
                                           0, u.dims()[1] - 1,
                                           i, i,
                                           j, j);
-            Array<T> vTSlice = getSubArray(vT,
+            Array<T> vTSlice = getSubArray(vT, false,
                                            0, vT.dims()[0] - 1,
                                            0, vT.dims()[1] - 1,
                                            i, i,
@@ -100,16 +100,20 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
 
     Array<T> v = transpose(vT, true);
 
+    // Build relative tolerance array
+    Array<Tr> sVecMax = reduce<af_max_t, Tr, Tr>(sVec, 0);
+    Array<T> sVecMaxCast = cast<T, Tr>(sVecMax);
+    double tolMulShape = tol * static_cast<double>(max(M, N));
+    Array<T> tolMulShapeArr = createValueArray<T>(sVecMaxCast.dims(), scalar<T>(tolMulShape));
+    Array<T> relTol = arithOp<T, af_mul_t>(tolMulShapeArr, sVecMaxCast, sVecMaxCast.dims());
+    Array<T> relTolArr = tile<T>(relTol, dim4(sVecCast.dims()[0]));
+
     // Get reciprocal of sVec's non-zero values for s pinverse, except for
     // very small non-zero values though (< relTol), in order to avoid very
     // large reciprocals
-    double relTol = tol * static_cast<double>(max(M, N))
-                        * reduce_all<af_max_t, Tr, Tr>(sVec);
-    Array<T> relTolArr = createValueArray<T>(sVecCast.dims(), scalar<T>(relTol));
     Array<T> ones = createValueArray<T>(sVecCast.dims(), scalar<T>(1.));
     Array<T> sVecRecip = arithOp<T, af_div_t>(ones, sVecCast, sVecCast.dims());
-    Array<char> cond = logicOp<T, af_ge_t>(sVecCast, relTolArr,
-                                           sVecCast.dims());
+    Array<char> cond = logicOp<T, af_ge_t>(sVecCast, relTolArr, sVecCast.dims());
     Array<T> zeros = createValueArray<T>(sVecCast.dims(), scalar<T>(0.));
     sVecRecip = createSelectNode<T>(cond, sVecRecip, zeros, sVecRecip.dims());
     sVecRecip.eval();
@@ -124,10 +128,10 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     // Thus s+ produced by diagCreate() will have minimal dims as well,
     // and v could have an extra dim0 or u* could have an extra dim1
     if (v.dims()[1] > sPinv.dims()[0]) {
-        v = getSubArray(v, 0, v.dims()[0] - 1, 0, sPinv.dims()[0] - 1);
+        v = getSubArray(v, false, 0, v.dims()[0] - 1, 0, sPinv.dims()[0] - 1);
     }
     if (uT.dims()[0] > sPinv.dims()[1]) {
-        uT = getSubArray(uT, 0, sPinv.dims()[1] - 1, 0, uT.dims()[1] - 1);
+        uT = getSubArray(uT, false, 0, sPinv.dims()[1] - 1, 0, uT.dims()[1] - 1);
     }
 
     Array<T> out = matmul<T>(matmul<T>(v, sPinv, AF_MAT_NONE, AF_MAT_NONE),
@@ -136,41 +140,9 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     return out;
 }
 
-// Naive batching for now
-template<typename T>
-Array<T> batchedPinverse(const Array<T> &in, const double tol) {
-    uint dim2 = in.dims()[2];
-    uint dim3 = in.dims()[3];
-
-    if (in.ndims() <= 2) {
-        return pinverseSvd<T>(in, tol);
-    }
-    else {
-        vector<Array<T> > finalOutputs;
-        for (int j = 0; j < dim3; ++j) {
-            vector<Array<T> > outputs;
-            for (int i = 0; i < dim2; ++i) {
-                vector<af_seq> seqs = {
-                    {0., static_cast<double>(in.dims()[0] - 1), 1.},
-                    {0., static_cast<double>(in.dims()[1] - 1), 1.},
-                    {static_cast<double>(i), static_cast<double>(i), 1.},
-                    {static_cast<double>(j), static_cast<double>(j), 1.}
-                };
-                Array<T> inSlice = createSubArray<T>(in, seqs, false);
-                outputs.push_back(pinverseSvd<T>(inSlice, tol));
-            }
-            Array<T> mergedOuts = join<T>(2, outputs);
-            finalOutputs.push_back(mergedOuts);
-        }
-        Array<T> finalMergedOuts = join<T>(3, finalOutputs);
-        return finalMergedOuts;
-    }
-}
-
 template<typename T>
 static inline af_array pinverse(const af_array in, const double tol)
 {
-    // return getHandle(batchedPinverse<T>(getArray<T>(in), tol));
     return getHandle(pinverseSvd<T>(getArray<T>(in), tol));
 }
 
