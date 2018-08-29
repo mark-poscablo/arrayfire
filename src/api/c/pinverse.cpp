@@ -60,21 +60,22 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     in.eval();
     int M = in.dims()[0];
     int N = in.dims()[1];
-    int dim2 = in.dims()[2];
-    int dim3 = in.dims()[3];
+    int P = in.dims()[2];
+    int Q = in.dims()[3];
 
     // Compute SVD
     typedef typename dtype_traits<T>::base_type Tr;
-    Array<Tr> sVec = createEmptyArray<Tr>(dim4(min(M, N), 1, dim2, dim3));
-    Array<T> u = createEmptyArray<T>(dim4(M, M, dim2, dim3));
-    Array<T> vT = createEmptyArray<T>(dim4(N, N, dim2, dim3));
-    for (uint j = 0; j < dim3; ++j) {
-        for (uint i = 0; i < dim2; ++i) {
-            Array<T> inSlice = getSubArray(in, true,
-                                           0, in.dims()[0] - 1,
-                                           0, in.dims()[1] - 1,
+    Array<Tr> sVec = createEmptyArray<Tr>(dim4(min(M, N), 1, P, Q));
+    Array<T> u = createEmptyArray<T>(dim4(M, M, P, Q));
+    Array<T> vT = createEmptyArray<T>(dim4(N, N, P, Q));
+    for (uint j = 0; j < Q; ++j) {
+        for (uint i = 0; i < P; ++i) {
+            Array<T> inSlice = getSubArray(in, false,
+                                           0, M - 1,
+                                           0, N - 1,
                                            i, i,
                                            j, j);
+            af_print_array_gen("inSlice", getHandle(inSlice), 6);
             Array<Tr> sVecSlice = getSubArray(sVec, false,
                                               0, sVec.dims()[0] - 1,
                                               0, 0,
@@ -116,10 +117,10 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     Array<char> cond = logicOp<T, af_ge_t>(sVecCast, relTolArr, sVecCast.dims());
     Array<T> zeros = createValueArray<T>(sVecCast.dims(), scalar<T>(0.));
     sVecRecip = createSelectNode<T>(cond, sVecRecip, zeros, sVecRecip.dims());
-    sVecRecip.eval();
 
     // Make s vector into s pinverse array
     Array<T> sPinv = diagCreate<T>(sVecRecip, 0);
+    std::cout << sPinv.dims() << std::endl;
 
     Array<T> uT = transpose(u, true);
 
@@ -136,6 +137,7 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
 
     Array<T> out = matmul<T>(matmul<T>(v, sPinv, AF_MAT_NONE, AF_MAT_NONE),
                              uT, AF_MAT_NONE, AF_MAT_NONE);
+    af_print_array(getHandle(out));
 
     return out;
 }

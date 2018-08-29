@@ -244,8 +244,8 @@ TEST(Pinverse, Batching3D) {
     array out0 = out(span, span, 0);
     array out1 = out(span, span, 1);
 
-    ASSERT_ARRAYS_NEAR(inpinv0, out0, eps<float>());
-    ASSERT_ARRAYS_NEAR(inpinv1, out1, eps<float>());
+    ASSERT_ARRAYS_NEAR(inpinv0, out0, relEps<float>(inpinv0));
+    ASSERT_ARRAYS_NEAR(inpinv1, out1, relEps<float>(inpinv1));
 }
 
 TEST(Pinverse, Batching4D) {
@@ -261,10 +261,10 @@ TEST(Pinverse, Batching4D) {
     array out10 = out(span, span, 1, 0);
     array out11 = out(span, span, 1, 1);
 
-    ASSERT_ARRAYS_NEAR(inpinv00, out00, eps<float>());
-    ASSERT_ARRAYS_NEAR(inpinv01, out01, eps<float>());
-    ASSERT_ARRAYS_NEAR(inpinv10, out10, eps<float>());
-    ASSERT_ARRAYS_NEAR(inpinv11, out11, eps<float>());
+    ASSERT_ARRAYS_NEAR(inpinv00, out00, relEps<float>(inpinv00));
+    ASSERT_ARRAYS_NEAR(inpinv01, out01, relEps<float>(inpinv01));
+    ASSERT_ARRAYS_NEAR(inpinv10, out10, relEps<float>(inpinv10));
+    ASSERT_ARRAYS_NEAR(inpinv11, out11, relEps<float>(inpinv11));
 }
 
 TEST(Pinverse, CustomTol) {
