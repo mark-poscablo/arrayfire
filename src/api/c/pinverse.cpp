@@ -75,7 +75,6 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
                                            0, N - 1,
                                            i, i,
                                            j, j);
-            af_print_array_gen("inSlice", getHandle(inSlice), 6);
             Array<Tr> sVecSlice = getSubArray(sVec, false,
                                               0, sVec.dims()[0] - 1,
                                               0, 0,
@@ -105,8 +104,10 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     Array<Tr> sVecMax = reduce<af_max_t, Tr, Tr>(sVec, 0);
     Array<T> sVecMaxCast = cast<T, Tr>(sVecMax);
     double tolMulShape = tol * static_cast<double>(max(M, N));
-    Array<T> tolMulShapeArr = createValueArray<T>(sVecMaxCast.dims(), scalar<T>(tolMulShape));
-    Array<T> relTol = arithOp<T, af_mul_t>(tolMulShapeArr, sVecMaxCast, sVecMaxCast.dims());
+    Array<T> tolMulShapeArr = createValueArray<T>(sVecMaxCast.dims(),
+                                                  scalar<T>(tolMulShape));
+    Array<T> relTol = arithOp<T, af_mul_t>(tolMulShapeArr, sVecMaxCast,
+                                           sVecMaxCast.dims());
     Array<T> relTolArr = tile<T>(relTol, dim4(sVecCast.dims()[0]));
 
     // Get reciprocal of sVec's non-zero values for s pinverse, except for
@@ -119,8 +120,12 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     sVecRecip = createSelectNode<T>(cond, sVecRecip, zeros, sVecRecip.dims());
 
     // Make s vector into s pinverse array
-    Array<T> sPinv = diagCreate<T>(sVecRecip, 0);
-    std::cout << sPinv.dims() << std::endl;
+    Array<T> sVecRecipMod = modDims<T>(sVecRecip, dim4(sVecRecip.dims()[0],
+                                                       (sVecRecip.dims()[2]
+                                                        * sVecRecip.dims()[3])));
+    Array<T> sPinv = diagCreate<T>(sVecRecipMod, 0);
+    sPinv = modDims<T>(sPinv, dim4(sPinv.dims()[0], sPinv.dims()[1],
+                                   sVecRecip.dims()[2], sVecRecip.dims()[3]));
 
     Array<T> uT = transpose(u, true);
 
@@ -129,15 +134,22 @@ Array<T> pinverseSvd(const Array<T> &in, const double tol)
     // Thus s+ produced by diagCreate() will have minimal dims as well,
     // and v could have an extra dim0 or u* could have an extra dim1
     if (v.dims()[1] > sPinv.dims()[0]) {
-        v = getSubArray(v, false, 0, v.dims()[0] - 1, 0, sPinv.dims()[0] - 1);
+        v = getSubArray(v, false,
+                        0, v.dims()[0] - 1,
+                        0, sPinv.dims()[0] - 1,
+                        0, v.dims()[2] - 1,
+                        0, v.dims()[3] - 1);
     }
     if (uT.dims()[0] > sPinv.dims()[1]) {
-        uT = getSubArray(uT, false, 0, sPinv.dims()[1] - 1, 0, uT.dims()[1] - 1);
+        uT = getSubArray(uT, false,
+                         0, sPinv.dims()[1] - 1,
+                         0, uT.dims()[1] - 1,
+                         0, uT.dims()[2] - 1,
+                         0, uT.dims()[3] - 1);
     }
 
     Array<T> out = matmul<T>(matmul<T>(v, sPinv, AF_MAT_NONE, AF_MAT_NONE),
                              uT, AF_MAT_NONE, AF_MAT_NONE);
-    af_print_array(getHandle(out));
 
     return out;
 }
