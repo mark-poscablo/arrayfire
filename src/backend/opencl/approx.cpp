@@ -46,18 +46,11 @@ namespace opencl
     }
 
     template<typename Ty, typename Tp>
-    Array<Ty> approx2(const Array<Ty> &zi,
-                      const Array<Tp> &xo, const int xdim, const Tp &xi_beg, const Tp &xi_step,
-                      const Array<Tp> &yo, const int ydim, const Tp &yi_beg, const Tp &yi_step,
-                      const af_interp_type method, const float offGrid)
+    void approx2(Array<Ty> &zo, const Array<Ty> &zi,
+                 const Array<Tp> &xo, const int xdim, const Tp &xi_beg, const Tp &xi_step,
+                 const Array<Tp> &yo, const int ydim, const Tp &yi_beg, const Tp &yi_step,
+                 const af_interp_type method, const float offGrid)
     {
-        af::dim4 odims = zi.dims();
-        odims[xdim] = xo.dims()[xdim];
-        odims[ydim] = xo.dims()[ydim];
-
-        // Create output placeholder
-        Array<Ty> zo = createEmptyArray<Ty>(odims);
-
         switch(method) {
         case AF_INTERP_NEAREST:
         case AF_INTERP_LOWER:
@@ -87,8 +80,6 @@ namespace opencl
         default:
             break;
         }
-
-        return zo;
     }
 
 #define INSTANTIATE(Ty, Tp)                                         \
@@ -99,17 +90,18 @@ namespace opencl
                                        const Tp &xi_step,           \
                                        const af_interp_type method, \
                                        const float offGrid);        \
-    template Array<Ty> approx2<Ty, Tp>(const Array<Ty> &zi,         \
-                                       const Array<Tp> &xo,         \
-                                       const int xdim,              \
-                                       const Tp &xi_beg,            \
-                                       const Tp &xi_step,           \
-                                       const Array<Tp> &yo,         \
-                                       const int ydim,              \
-                                       const Tp &yi_beg,            \
-                                       const Tp &yi_step,           \
-                                       const af_interp_type method, \
-                                       const float offGrid);        \
+    template void approx2<Ty, Tp>(Array<Ty> &zo,                    \
+                                  const Array<Ty> &zi,              \
+                                  const Array<Tp> &xo,              \
+                                  const int xdim,                   \
+                                  const Tp &xi_beg,                 \
+                                  const Tp &xi_step,                \
+                                  const Array<Tp> &yo,              \
+                                  const int ydim,                   \
+                                  const Tp &yi_beg,                 \
+                                  const Tp &yi_step,                \
+                                  const af_interp_type method,      \
+                                  const float offGrid);             \
 
     INSTANTIATE(float  , float )
     INSTANTIATE(double , double)

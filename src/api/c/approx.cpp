@@ -32,15 +32,15 @@ static inline af_array approx1(const af_array yi,
 }
 
 template<typename Ty, typename Tp>
-static inline af_array approx2(const af_array zi,
+static inline af_array approx2(af_array *zo, const af_array zi,
                                const af_array xo, const int xdim, const Tp &xi_beg, const Tp &xi_step,
                                const af_array yo, const int ydim, const Tp &yi_beg, const Tp &yi_step,
                                const af_interp_type method, const float offGrid)
 {
-    return getHandle(approx2<Ty>(getArray<Ty>(zi),
-                                 getArray<Tp>(xo), xdim, xi_beg, xi_step,
-                                 getArray<Tp>(yo), ydim, yi_beg, yi_step,
-                                 method, offGrid));
+    approx2<Ty>(getWritableArray<Ty>(*zo), getArray<Ty>(zi),
+                getArray<Tp>(xo), xdim, xi_beg, xi_step,
+                getArray<Tp>(yo), ydim, yi_beg, yi_step,
+                method, offGrid);
 }
 
 af_err af_approx1(af_array *yo, const af_array yi, const af_array xo,
@@ -151,31 +151,38 @@ af_err af_approx2_uniform(af_array *zo, const af_array zi,
         }
 
         if (zi_dims.ndims() == 0 || xo_dims.ndims() ==  0 || yo_dims.ndims() == 0) {
-            return af_create_handle(zo, 0, nullptr, zi_info.getType());
+            *zo = createHandle(dim4(0,0,0,0), zi_info.getType());
+            return AF_SUCCESS;
         }
 
-        af_array output;
+        dim4 zo_dims = zi_dims;
+        zo_dims[xdim] = xo_dims[xdim];
+        zo_dims[ydim] = xo_dims[ydim];
+        if (*zo == 0) {
+            *zo = createHandle(zo_dims, zi_info.getType());
+        }
+
+        DIM_ASSERT(1, getInfo(*zo).dims() == zo_dims);
 
         switch(zi_info.getType()) {
-        case f32: output = approx2<float  , float >(zi,
-                                                    xo, xdim, xi_beg, xi_step,
-                                                    yo, ydim, yi_beg, yi_step,
-                                                    method, offGrid);  break;
-        case f64: output = approx2<double , double>(zi,
-                                                    xo, xdim, xi_beg, xi_step,
-                                                    yo, ydim, yi_beg, yi_step,
-                                                    method, offGrid);  break;
-        case c32: output = approx2<cfloat , float >(zi,
-                                                    xo, xdim, xi_beg, xi_step,
-                                                    yo, ydim, yi_beg, yi_step,
-                                                    method, offGrid);  break;
-        case c64: output = approx2<cdouble, double>(zi,
-                                                    xo, xdim, xi_beg, xi_step,
-                                                    yo, ydim, yi_beg, yi_step,
-                                                    method, offGrid);  break;
+        case f32: approx2<float  , float >(zo, zi,
+                                           xo, xdim, xi_beg, xi_step,
+                                           yo, ydim, yi_beg, yi_step,
+                                           method, offGrid);  break;
+        case f64: approx2<double , double>(zo, zi,
+                                           xo, xdim, xi_beg, xi_step,
+                                           yo, ydim, yi_beg, yi_step,
+                                           method, offGrid);  break;
+        case c32: approx2<cfloat , float >(zo, zi,
+                                           xo, xdim, xi_beg, xi_step,
+                                           yo, ydim, yi_beg, yi_step,
+                                           method, offGrid);  break;
+        case c64: approx2<cdouble, double>(zo, zi,
+                                           xo, xdim, xi_beg, xi_step,
+                                           yo, ydim, yi_beg, yi_step,
+                                           method, offGrid);  break;
         default:  TYPE_ERROR(1, zi_info.getType());
         }
-        std::swap(*zo, output);
     }
     CATCHALL;
 
