@@ -759,3 +759,104 @@ TEST(Approx2, CPPEmptyPosAndInput)
     ASSERT_TRUE(pos.isempty());
     ASSERT_TRUE(interpolated.isempty());
 }
+
+TEST(Approx2, UseNullInitialOutput) {
+    float h_in[9] = {1.0, 2.0, 3.0,
+                     4.0, 5.0, 6.0,
+                     7.0, 8.0, 9.0};
+    dim_t h_in_dims[2] = {3, 3};
+
+    af_array in = 0;
+    af_create_array(&in, &h_in[0], 2, &h_in_dims[0], f32);
+
+    dim_t h_pos_dims[2] = {2, 2};
+    float h_pos0[4] = {0.5, 1.5, 0.5, 1.5};
+    float h_pos1[4] = {0.5, 0.5, 1.5, 1.5};
+    af_array pos0 = 0;
+    af_array pos1 = 0;
+    af_create_array(&pos0, &h_pos0[0], 2, &h_pos_dims[0], f32);
+    af_create_array(&pos1, &h_pos1[0], 2, &h_pos_dims[0], f32);
+
+    dim_t h_out_dims[2] = {2, 2};
+    af_array out = 0;
+    af_approx2(&out, in, pos0, pos1, AF_INTERP_LINEAR, 0);
+
+    ASSERT_FALSE(out == 0);
+}
+
+TEST(Approx2, UseExistingOutputArray) {
+    float h_in[9] = {1.0, 2.0, 3.0,
+                     4.0, 5.0, 6.0,
+                     7.0, 8.0, 9.0};
+    dim_t h_in_dims[2] = {3, 3};
+
+    af_array in = 0;
+    af_create_array(&in, &h_in[0], 2, &h_in_dims[0], f32);
+
+    dim_t h_pos_dims[2] = {2, 2};
+    float h_pos0[4] = {0.5, 1.5, 0.5, 1.5};
+    float h_pos1[4] = {0.5, 0.5, 1.5, 1.5};
+    af_array pos0 = 0;
+    af_array pos1 = 0;
+    af_create_array(&pos0, &h_pos0[0], 2, &h_pos_dims[0], f32);
+    af_create_array(&pos1, &h_pos1[0], 2, &h_pos_dims[0], f32);
+
+    dim_t h_out_dims[2] = {2, 2};
+    af_array out_ptr = 0;
+    af_create_handle(&out_ptr, 2, &h_out_dims[0], f32);
+    af_array out_ptr_copy = out_ptr;
+
+    af_approx2(&out_ptr, in, pos0, pos1, AF_INTERP_LINEAR, 0);
+
+    ASSERT_EQ(out_ptr_copy, out_ptr);
+    // Verify that the original af_array does contain the results
+    ASSERT_ARRAYS_EQ(out_ptr_copy, out_ptr);
+}
+
+TEST(Approx1, UseExistingOutputSlice) {
+    float h_in[9] = {1.0, 2.0, 3.0,
+                     4.0, 5.0, 6.0,
+                     7.0, 8.0, 9.0};
+    dim_t h_in_dims[2] = {3, 3};
+
+    af_array in = 0;
+    af_create_array(&in, &h_in[0], 2, &h_in_dims[0], f32);
+
+    dim_t h_pos_dims[2] = {2, 2};
+    float h_pos0[4] = {0.5, 1.5, 0.5, 1.5};
+    float h_pos1[4] = {0.5, 0.5, 1.5, 1.5};
+    af_array pos0 = 0;
+    af_array pos1 = 0;
+    af_create_array(&pos0, &h_pos0[0], 2, &h_pos_dims[0], f32);
+    af_create_array(&pos1, &h_pos1[0], 2, &h_pos_dims[0], f32);
+
+    float h_out[12] = {10.0, 20.0,
+                       30.0, 40.0,
+                       10.0, 20.0,
+                       30.0, 40.0,
+                       10.0, 20.0,
+                       30.0, 40.0};
+    dim_t h_out_dims[3] = {2, 2, 3};
+    af_array out = 0;
+    af_create_array(&out, &h_out[0], 3, &h_out_dims[0], f32);
+    af_seq idx_dim2 = {1, 1, 1}; // get slice 1 of dim2
+    af_seq idx[3] = {af_span, af_span, idx_dim2};
+    af_array out_slice = 0;
+    af_index(&out_slice, out, 3, &idx[0]);
+
+    af_approx2(&out_slice, in, pos0, pos1, AF_INTERP_LINEAR, 0);
+
+    dim_t nelems = 0;
+    af_get_elements(&nelems, out);
+    vector<float> h_out_approx(nelems);
+    af_get_data_ptr(&h_out_approx.front(), out);
+
+    float h_gold[4] = {3.0, 4.0, 6.0, 7.0};
+
+    // Check slice 1 of dim2 (elements 5 to 9 of h_out_approx) to see if they
+    // contain af_approx1's results (without additional intermediate processing
+    // like indexing)
+    for (int i = 0; i < 4; ++i) {
+        EXPECT_EQ(h_gold[i], h_out_approx[4+i]) << "at i: " << i << endl;
+    }
+}
