@@ -15,3 +15,4 @@
 #pragma once
 
 std::string getEnvVar(const std::string &key);
+void saveKernel(std::string func_name, std::string jit_ker);

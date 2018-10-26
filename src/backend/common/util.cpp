@@ -10,6 +10,7 @@
 /// This file contains platform independent utility functions
 #include <string>
 #include <cstdlib>
+#include <fstream>
 
 #if defined(OS_WIN)
 #include <Windows.h>
@@ -18,6 +19,7 @@
 #include <af/defines.h>
 
 using std::string;
+using std::ofstream;
 
 string getEnvVar(const std::string &key)
 {
@@ -55,4 +57,22 @@ const char *getName(af_dtype type)
   case b8 : return "bool";
   default : return "unknown type";
   }
+}
+
+void saveKernel(string func_name, string jit_ker) {
+    string kerSavePath = getEnvVar("AF_SAVE_KERNELS");
+    if (!kerSavePath.empty()) {
+        ofstream kerSaveStream;
+#if OS_WIN
+        string slashChar = (kerSavePath[kerSavePath.size() - 1] == '\\') ?
+            "" : "\\";
+#else
+        string slashChar = (kerSavePath[kerSavePath.size() - 1] == '/') ?
+            "" : "/";
+#endif
+        kerSaveStream.open(kerSavePath + slashChar + func_name + ".cpp",
+                           std::ios::out);
+        kerSaveStream << jit_ker;
+        kerSaveStream.close();
+    }
 }

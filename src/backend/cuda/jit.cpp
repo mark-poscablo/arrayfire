@@ -9,6 +9,7 @@
 
 #include <kernel_headers/jit.hpp>
 #include <common/dispatch.hpp>
+#include <common/util.hpp>
 #include <err_cuda.hpp>
 
 #include <Array.hpp>
@@ -364,6 +365,7 @@ static CUfunction getKernel(const vector<Node *> &output_nodes,
 
     if (idx == kernelCaches[device].end()) {
         string jit_ker = getKernelString(funcName, full_nodes, full_ids, output_ids, is_linear);
+        saveKernel(funcName, jit_ker);
         entry = compileKernel(funcName.c_str(), jit_ker);
         kernelCaches[device][funcName] = entry;
     } else {
