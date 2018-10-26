@@ -126,9 +126,9 @@ af_err af_approx2_uniform(af_array *zo, const af_array zi,
         const ArrayInfo& xo_info = getInfo(xo);
         const ArrayInfo& yo_info = getInfo(yo);
 
-        dim4 zi_dims = zi_info.dims();
-        dim4 xo_dims = xo_info.dims();
-        dim4 yo_dims = yo_info.dims();
+        const dim4 zi_dims = zi_info.dims();
+        const dim4 xo_dims = xo_info.dims();
+        const dim4 yo_dims = yo_info.dims();
 
         ARG_ASSERT(1, zi_info.isFloating());                     // Only floating and complex types
         ARG_ASSERT(2, xo_info.isRealFloating());                 // Only floating types
