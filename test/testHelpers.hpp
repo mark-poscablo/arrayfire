@@ -30,6 +30,9 @@
 #include <utility>
 #include <vector>
 
+#include <cstdarg>
+#include <string>
+
 typedef unsigned char  uchar;
 typedef unsigned int   uint;
 typedef unsigned short ushort;
@@ -983,4 +986,15 @@ template<typename T>
                             MAX_ABSDIFF)
 
 }
+
+template<class Lambda, class... Args>
+void testExistingOutput(Lambda af_func, af_array gold_out, af_array in, Args... args) {
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    // Check if the function will create a new array if given a null output array
+    af_array out = 0;
+    af_func(&out, in, args...);
+    ASSERT_FALSE(out == 0);
+}
+
 #pragma GCC diagnostic pop

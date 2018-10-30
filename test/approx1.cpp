@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include <iostream>
+
 using af::abs;
 using af::approx1;
 using af::array;
@@ -919,4 +921,30 @@ TEST(Approx1, UseExistingOutputSlice) {
     for (int i = 0; i < 5; ++i) {
         EXPECT_EQ(h_gold_arr[i], h_out_approx[5+i]) << "at i: " << i << endl;
     }
+}
+
+void printsum(int a, int b, int c) {
+    std::cout << a + b + c << std::endl;
+}
+
+TEST(Approx1, MarkTest) {
+    // std::cout << "Hello world!" << std::endl;
+    // testExistingOutput(af_approx1, in, pos, AF_INTERP_LINEAR, 0);
+    float h_in[3] = {10, 20, 30};
+    dim_t h_in_dims = 3;
+
+    af_array in = 0;
+    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
+
+    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
+    dim_t h_pos_dims = 5;
+    af_array pos = 0;
+    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
+
+    float h_gold[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
+    dim_t h_gold_dims = 5;
+    af_array gold = 0;
+    ASSERT_SUCCESS(af_create_array(&gold, &h_gold[0], 1, &h_gold_dims, f32));
+
+    testExistingOutput(af_approx1, gold, in, pos, AF_INTERP_LINEAR, 0);
 }
