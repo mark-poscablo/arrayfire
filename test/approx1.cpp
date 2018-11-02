@@ -841,80 +841,110 @@ TEST(Approx1, CPPEmptyPosAndInput)
     ASSERT_TRUE(interp.isempty());
 }
 
-TEST(Approx1, UseNullInitialOutput) {
+class Approx1ExistingOutputTest : public ::testing::Test {
+protected:
+    af_array in_;
+    af_array pos_;
+    af_interp_type method_;
+    float off_grid_;
+
+    void getInput(af_array *data);
+    void getPos(af_array *pos);
+    void getOut1D(af_array *out);
+    void getOut2D(af_array *out);
+    void getGold1D(af_array *gold);
+    void getGold2D(af_array *gold);
+
+    virtual void SetUp() {
+        getInput(&in_);
+        getPos(&pos_);
+        method_ = AF_INTERP_LINEAR;
+        off_grid_ = 0;
+    }
+
+    virtual void TearDown() {
+        if (in_   != 0) af_release_array(in_);
+        if (pos_  != 0) af_release_array(pos_);
+    }
+};
+
+void Approx1ExistingOutputTest::getInput(af_array *data) {
     float h_in[3] = {10, 20, 30};
     dim_t h_in_dims = 3;
-
-    af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
-
-    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
-    dim_t h_pos_dims = 5;
-    af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
-
-    af_array out = 0;
-    ASSERT_SUCCESS(af_approx1(&out, in, pos, AF_INTERP_LINEAR, 0));
-
-    ASSERT_FALSE(out == 0);
+    ASSERT_SUCCESS(af_create_array(data, &h_in[0], 1, &h_in_dims, f32));
 }
 
-TEST(Approx1, UseExistingOutputArray) {
-    float h_in[3] = {10, 20, 30};
-    dim_t h_in_dims = 3;
-
-    af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
-
+void Approx1ExistingOutputTest::getPos(af_array *pos) {
     float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
     dim_t h_pos_dims = 5;
-    af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
+    ASSERT_SUCCESS(af_create_array(pos, &h_pos[0], 1, &h_pos_dims, f32));
+}
 
+void Approx1ExistingOutputTest::getOut1D(af_array *out) {
     dim_t h_out_dims = 5;
-    af_array out_ptr = 0;
-    ASSERT_SUCCESS(af_create_handle(&out_ptr, 1, &h_out_dims, f32));
-    af_array out_ptr_copy = out_ptr;
-    ASSERT_SUCCESS(af_approx1(&out_ptr, in, pos, AF_INTERP_LINEAR, 0));
-
-    ASSERT_EQ(out_ptr_copy, out_ptr);
-    // Verify that the original ASSERT_SUCCESS(af_array does contain the results
-    ASSERT_ARRAYS_EQ(out_ptr_copy, out_ptr);
+    ASSERT_SUCCESS(af_create_handle(out, 1, &h_out_dims, f32));
 }
 
-TEST(Approx1, UseExistingOutputSlice) {
-    float h_in[3] = {10, 20, 30};
-    dim_t h_in_dims = 3;
-
-    af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
-
-    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
-    dim_t h_pos_dims = 5;
-    af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
-
+void Approx1ExistingOutputTest::getOut2D(af_array *out) {
     float h_out[15] = {1.0, 1.5, 2.0, 2.5, 3.0,
                        4.0, 4.5, 5.0, 5.5, 6.0,
                        7.0, 7.5, 8.0, 8.5, 9.0};
     dim_t h_out_dims[2] = {5, 3};
-    af_array out = 0;
-    ASSERT_SUCCESS(af_create_array(&out, &h_out[0], 2, &h_out_dims[0], f32));
-    af_seq idx_dim1 = {1, 1, 1}; // get slice 1 of dim1
-    af_seq idx[2] = {af_span, idx_dim1};
-    af_array out_slice = 0;
-    ASSERT_SUCCESS(af_index(&out_slice, out, 2, &idx[0]));
-    ASSERT_SUCCESS(af_approx1(&out_slice, in, pos, AF_INTERP_LINEAR, 0));
+    ASSERT_SUCCESS(af_create_array(out, &h_out[0], 2, &h_out_dims[0], f32));
+}
 
-    dim_t nelems = 0;
-    ASSERT_SUCCESS(af_get_elements(&nelems, out));
-    vector<float> h_out_approx(nelems);
-    ASSERT_SUCCESS(af_get_data_ptr(&h_out_approx.front(), out));
+void Approx1ExistingOutputTest::getGold1D(af_array *gold) {
+    float h_gold[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
+    dim_t h_gold_dims = 5;
+    ASSERT_SUCCESS(af_create_array(gold, &h_gold[0], 1, &h_gold_dims, f32));
+}
 
+void Approx1ExistingOutputTest::getGold2D(af_array *gold) {
     float h_gold[15] = {1.0, 1.5, 2.0, 2.5, 3.0,
                         10.0, 15.0, 20.0, 25.0, 30.0,
                         7.0, 7.5, 8.0, 8.5, 9.0};
+    dim_t h_gold_dims[2] = {5, 3};
+    ASSERT_SUCCESS(af_create_array(gold, &h_gold[0], 2, &h_gold_dims[0], f32));
+}
+
+TEST_F(Approx1ExistingOutputTest, NullOutput) {
+    af_array out = 0;
+    ASSERT_SUCCESS(af_approx1(&out, in_, pos_, method_, off_grid_));
+
+    ASSERT_FALSE(out == 0);
+}
+
+TEST_F(Approx1ExistingOutputTest, ExistingOutput) {
+    af_array out_ptr = 0;
+    getOut1D(&out_ptr);
+    af_array out_ptr_copy = out_ptr;
+    ASSERT_SUCCESS(af_approx1(&out_ptr, in_, pos_, method_, off_grid_));
+
     af_array gold = 0;
-    ASSERT_SUCCESS(af_create_array(&gold, &h_gold[0], 2, &h_out_dims[0], f32));
-    ASSERT_ARRAYS_EQ(gold, out);
+    getGold1D(&gold);
+
+    // Verify that the original output af_array memory was used
+    ASSERT_EQ(out_ptr_copy, out_ptr);
+    // Verify that the output is correct
+    ASSERT_ARRAYS_EQ(gold, out_ptr);
+    // Verify that the original af_array does contain the output
+    ASSERT_ARRAYS_EQ(out_ptr_copy, out_ptr);
+}
+
+TEST_F(Approx1ExistingOutputTest, ExistingOutputSlice) {
+    af_array out = 0;
+    getOut2D(&out);
+
+    // Get slice 1 of dim1
+    af_seq idx_dim1 = {1, 1, 1};
+    af_seq idx[2] = {af_span, idx_dim1};
+    af_array out_slice = 0;
+    ASSERT_SUCCESS(af_index(&out_slice, out, 2, &idx[0]));
+
+    // Use slice/subarray as output of approx1
+    ASSERT_SUCCESS(af_approx1(&out_slice, in_, pos_, method_, off_grid_));
+
+    af_array gold = 0;
+    getGold2D(&gold);
+    ASSERT_ARRAYS_EQ(gold, out); // Verify that the slice contains the output
 }
