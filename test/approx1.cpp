@@ -900,27 +900,21 @@ TEST(Approx1, UseExistingOutputSlice) {
     af_array pos = 0;
     ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
 
-    float h_out[15] = {1.0, 1.5, 2.0, 2.5, 3.0,
-                       4.0, 4.5, 5.0, 5.5, 6.0,
-                       7.0, 7.5, 8.0, 8.5, 9.0};
-    dim_t h_out_dims[2] = {5, 3};
+    dim_t out_ndims = 2;
+    dim_t out_dims[2] = {5, 3};
     af_array out = 0;
-    ASSERT_SUCCESS(af_create_array(&out, &h_out[0], 2, &h_out_dims[0], f32));
-    af_seq idx_dim1 = {1, 1, 1}; // get slice 1 of dim1
-    af_seq idx[2] = {af_span, idx_dim1};
     af_array out_slice = 0;
-    ASSERT_SUCCESS(af_index(&out_slice, out, 2, &idx[0]));
+    genSubArray(&out_slice, out_ndims, &out_dims[0], f32,
+                af_span, 1, af_span, af_span, &out);
+    af_array gold = 0;
+    ASSERT_SUCCESS(af_copy_array(&gold, out));
     ASSERT_SUCCESS(af_approx1(&out_slice, in, pos, AF_INTERP_LINEAR, 0));
 
-    dim_t nelems = 0;
-    ASSERT_SUCCESS(af_get_elements(&nelems, out));
-    vector<float> h_out_approx(nelems);
-    ASSERT_SUCCESS(af_get_data_ptr(&h_out_approx.front(), out));
-
-    float h_gold[15] = {1.0, 1.5, 2.0, 2.5, 3.0,
-                        10.0, 15.0, 20.0, 25.0, 30.0,
-                        7.0, 7.5, 8.0, 8.5, 9.0};
-    af_array gold = 0;
-    ASSERT_SUCCESS(af_create_array(&gold, &h_gold[0], 2, &h_out_dims[0], f32));
-    ASSERT_ARRAYS_EQ(gold, out);
+    float h_gold_subarr[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
+    af_array gold_subarr = 0;
+    dim_t gold_subarr_dims = 5;
+    ASSERT_SUCCESS(af_create_array(&gold_subarr, &h_gold_subarr[0], 1,
+                                   &gold_subarr_dims, f32));
+    testWriteToSubArray(gold, gold_subarr, out,
+                        af_span, 1, af_span, af_span);
 }

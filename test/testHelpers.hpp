@@ -489,6 +489,8 @@ void cleanSlate()
   ASSERT_EQ(af::getMemStepSize(), step_bytes);
 }
 
+//********** arrayfire custom test asserts ***********
+
 std::ostream& operator<<(std::ostream& os, af_err e) {
     return os << af_err_to_string(e);
 }
@@ -983,4 +985,50 @@ template<typename T>
                             MAX_ABSDIFF)
 
 }
+
+//********** end arrayfire custom test asserts ***********
+
+af::array genSubArray(const af::dim4& dims, const af::dtype ty,
+                      const af::index& s0, const af::index& s1,
+                      const af::index& s2, const af::index& s3,
+                      af::array& whole_arr)
+{
+    whole_arr = af::randu(dims, ty);
+    af::array subarr = whole_arr(s0, s1, s2, s3);
+    return subarr;
+}
+
+void genSubArray(af_array *out,
+                 const unsigned ndims, const dim_t *dims,
+                 const af::dtype ty,
+                 const af::index& s0, const af::index& s1,
+                 const af::index& s2, const af::index& s3,
+                 af_array *whole_arr)
+{
+    af::array arr;
+    af::dim4 arr_dims(ndims, dims);
+    af::array subarr = genSubArray(arr_dims, ty, s0, s1, s2, s3, arr);
+    af_retain_array(out, subarr.get());
+    af_retain_array(whole_arr, arr.get());
+}
+
+void testWriteToSubArray(af::array& orig_out, af::array gold_sub, af::array out,
+                         const af::index& s0, const af::index& s1,
+                         const af::index& s2, const af::index& s3)
+{
+    af::copy(orig_out, gold_sub, s0, s1, s2, s3);
+    ASSERT_ARRAYS_EQ(orig_out, out);
+}
+
+void testWriteToSubArray(af_array orig_out, af_array gold_sub, af_array out,
+                         const af::index& s0, const af::index& s1,
+                         const af::index& s2, const af::index& s3)
+{
+    af::array orig_out_cpp(orig_out);
+    af::array gold_sub_cpp(gold_sub);
+    af::array out_cpp(out);
+    testWriteToSubArray(orig_out_cpp, gold_sub_cpp, out_cpp,
+                        s0, s1, s2, s3);
+}
+
 #pragma GCC diagnostic pop
