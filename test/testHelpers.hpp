@@ -988,47 +988,70 @@ template<typename T>
 
 //********** end arrayfire custom test asserts ***********
 
+struct SubArrayTestInfo {
+    af::array large_arr;
+    af::array large_arr_cpy;
+    af::index subarr_s0;
+    af::index subarr_s1;
+    af::index subarr_s2;
+    af::index subarr_s3;
+};
+
 af::array genSubArray(const af::dim4& dims, const af::dtype ty,
-                      const af::index& s0, const af::index& s1,
-                      const af::index& s2, const af::index& s3,
-                      af::array& whole_arr)
-{
-    whole_arr = af::randu(dims, ty);
-    af::array subarr = whole_arr(s0, s1, s2, s3);
+                      SubArrayTestInfo& metadata) {
+    const dim_t pad_size = 2;
+    af::dim4 large_arr_dims(dims[0] > 1 ? dims[0] + 2*pad_size : dims[0],
+                            dims[1] > 1 ? dims[1] + 2*pad_size : dims[1],
+                            dims[2] > 1 ? dims[2] + 2*pad_size : dims[2],
+                            dims[3] > 1 ? dims[3] + 2*pad_size : dims[3]);
+    af::array large_arr = af::randu(large_arr_dims, ty);
+    af::seq subarr_s0 =
+        dims[0] > 1 ? af::seq(pad_size, pad_size + dims[0] - 1) : af::span;
+    af::seq subarr_s1 =
+        dims[1] > 1 ? af::seq(pad_size, pad_size + dims[1] - 1) : af::span;
+    af::seq subarr_s2 =
+        dims[2] > 1 ? af::seq(pad_size, pad_size + dims[2] - 1) : af::span;
+    af::seq subarr_s3 =
+        dims[3] > 1 ? af::seq(pad_size, pad_size + dims[3] - 1) : af::span;
+    af::array subarr = large_arr(subarr_s0, subarr_s1, subarr_s2, subarr_s3);
+
+    metadata.large_arr = large_arr;
+    metadata.large_arr_cpy = large_arr.copy();
+    metadata.subarr_s0 = subarr_s0;
+    metadata.subarr_s1 = subarr_s1;
+    metadata.subarr_s2 = subarr_s2;
+    metadata.subarr_s3 = subarr_s3;
+
+    af_print(large_arr);
+
     return subarr;
 }
 
-void genSubArray(af_array *out,
-                 const unsigned ndims, const dim_t *dims,
-                 const af::dtype ty,
-                 const af::index& s0, const af::index& s1,
-                 const af::index& s2, const af::index& s3,
-                 af_array *whole_arr)
-{
-    af::array arr;
+void genSubArray(af_array *out, const unsigned ndims, const dim_t *dims,
+                 const af::dtype ty, SubArrayTestInfo* metadata) {
     af::dim4 arr_dims(ndims, dims);
-    af::array subarr = genSubArray(arr_dims, ty, s0, s1, s2, s3, arr);
+    af::array subarr = genSubArray(arr_dims, ty, *metadata);
     af_retain_array(out, subarr.get());
-    af_retain_array(whole_arr, arr.get());
 }
 
-void testWriteToSubArray(af::array& orig_out, af::array gold_sub, af::array out,
-                         const af::index& s0, const af::index& s1,
-                         const af::index& s2, const af::index& s3)
-{
-    af::copy(orig_out, gold_sub, s0, s1, s2, s3);
-    ASSERT_ARRAYS_EQ(orig_out, out);
+void testWriteToSubArray(af::array gold_sub, SubArrayTestInfo& metadata) {
+    af_print(gold_sub);
+    af_print(metadata.large_arr_cpy);
+    af::copy(metadata.large_arr_cpy, gold_sub,
+             metadata.subarr_s0,
+             metadata.subarr_s1,
+             metadata.subarr_s2,
+             metadata.subarr_s3);
+
+    af_print(metadata.large_arr);
+    af_print(metadata.large_arr_cpy);
+
+    ASSERT_ARRAYS_EQ(metadata.large_arr_cpy, metadata.large_arr);
 }
 
-void testWriteToSubArray(af_array orig_out, af_array gold_sub, af_array out,
-                         const af::index& s0, const af::index& s1,
-                         const af::index& s2, const af::index& s3)
-{
-    af::array orig_out_cpp(orig_out);
+void testWriteToSubArray(af_array gold_sub, SubArrayTestInfo *metadata) {
     af::array gold_sub_cpp(gold_sub);
-    af::array out_cpp(out);
-    testWriteToSubArray(orig_out_cpp, gold_sub_cpp, out_cpp,
-                        s0, s1, s2, s3);
+    testWriteToSubArray(gold_sub_cpp, *metadata);
 }
 
 #pragma GCC diagnostic pop

@@ -900,21 +900,16 @@ TEST(Approx1, UseExistingOutputSlice) {
     af_array pos = 0;
     ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
 
-    dim_t out_ndims = 2;
-    dim_t out_dims[2] = {5, 3};
-    af_array out = 0;
-    af_array out_slice = 0;
-    genSubArray(&out_slice, out_ndims, &out_dims[0], f32,
-                af_span, 1, af_span, af_span, &out);
-    af_array gold = 0;
-    ASSERT_SUCCESS(af_copy_array(&gold, out));
-    ASSERT_SUCCESS(af_approx1(&out_slice, in, pos, AF_INTERP_LINEAR, 0));
+    dim_t out_subarr_dims = 5;
+    af_array out_subarr = 0;
+    SubArrayTestInfo metadata;
+    genSubArray(&out_subarr, 1, &out_subarr_dims, f32, &metadata);
+    ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
 
+    dim_t gold_subarr_dims = 5;
     float h_gold_subarr[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
     af_array gold_subarr = 0;
-    dim_t gold_subarr_dims = 5;
-    ASSERT_SUCCESS(af_create_array(&gold_subarr, &h_gold_subarr[0], 1,
-                                   &gold_subarr_dims, f32));
-    testWriteToSubArray(gold, gold_subarr, out,
-                        af_span, 1, af_span, af_span);
+    ASSERT_SUCCESS(af_create_array(&gold_subarr, &h_gold_subarr[0],
+                                   1, &gold_subarr_dims, f32));
+    testWriteToSubArray(gold_subarr, &metadata);
 }
