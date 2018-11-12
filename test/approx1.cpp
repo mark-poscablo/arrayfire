@@ -859,6 +859,35 @@ TEST(Approx1, UseNullInitialOutput) {
     ASSERT_FALSE(out == 0);
 }
 
+TEST(Approx1, UseNullOutputArrayV2) {
+    float h_in[3] = {10, 20, 30};
+    dim_t h_in_dims = 3;
+
+    af_array in = 0;
+    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
+
+    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
+    dim_t h_pos_dims = 5;
+    af_array pos = 0;
+    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
+
+    dim_t out_subarr_dims = 5;
+    af_array out_subarr = 0;
+    SubArrayTestInfo metadata;
+    genTestOutputArray(&out_subarr, 1, &out_subarr_dims, f32, &metadata,
+                       NULL_ARRAY);
+    printf("out_subarr before approx1: 0x%x\n", out_subarr);
+    ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
+    printf("out_subarr after approx1: 0x%x\n", out_subarr);
+
+    dim_t gold_subarr_dims = 5;
+    float h_gold_subarr[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
+    af_array gold_subarr = 0;
+    ASSERT_SUCCESS(af_create_array(&gold_subarr, &h_gold_subarr[0],
+                                   1, &gold_subarr_dims, f32));
+    testWriteToSubArray(out_subarr, gold_subarr, &metadata);
+}
+
 TEST(Approx1, UseExistingOutputArray) {
     float h_in[3] = {10, 20, 30};
     dim_t h_in_dims = 3;

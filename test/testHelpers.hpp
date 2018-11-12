@@ -989,6 +989,7 @@ template<typename T>
 //********** end arrayfire custom test asserts ***********
 
 enum TestOutputArrayType {
+    NULL_ARRAY,
     REGULAR_ARRAY,
     SUB_ARRAY,
     REORDERED_ARRAY
@@ -1004,6 +1005,20 @@ struct SubArrayTestInfo {
     af::index subarr_s3;
     TestOutputArrayType arr_type;
 };
+
+af::array genNullArray(const af::dim4& dims, const af::dtype ty,
+                          SubArrayTestInfo& metadata) {
+    af::array out;
+    metadata.large_arr = out;
+    metadata.large_arr_cpy = af::randu(dims, ty);
+    //af_print(metadata.large_arr);
+    //af_print(metadata.large_arr_cpy);
+    metadata.subarr_s0 = af::span;
+    metadata.subarr_s1 = af::span;
+    metadata.subarr_s2 = af::span;
+    metadata.subarr_s3 = af::span;
+    return metadata.large_arr;
+}
 
 af::array genRegularArray(const af::dim4& dims, const af::dtype ty,
                           SubArrayTestInfo& metadata) {
@@ -1073,6 +1088,9 @@ af::array genTestOutputArray(const af::dim4& dims, const af::dtype ty,
                              TestOutputArrayType arr_type) {
     metadata.arr_type = arr_type;
     switch (arr_type) {
+    case NULL_ARRAY:
+        return genNullArray(dims, ty, metadata);
+        break;
     case REGULAR_ARRAY:
         return genRegularArray(dims, ty, metadata);
         break;
@@ -1089,8 +1107,12 @@ void genTestOutputArray(af_array *out, const unsigned ndims, const dim_t *dims,
                         const af::dtype ty, SubArrayTestInfo* metadata,
                         TestOutputArrayType arr_type) {
     af::dim4 arr_dims(ndims, dims);
-    af::array test_output_array = genTestOutputArray(arr_dims, ty, *metadata, arr_type);
+    af::array test_output_array = genTestOutputArray(arr_dims, ty, *metadata,
+                                                     arr_type);
     af_retain_array(out, test_output_array.get());
+    if (arr_type == NULL_ARRAY) {
+        *out = 0;
+    }
     metadata->large_arr_ptr = *out;
 }
 
@@ -1113,6 +1135,11 @@ void testWriteToSubArray(af_array out, af_array gold_sub,
                          SubArrayTestInfo *metadata) {
     if (metadata->arr_type == REGULAR_ARRAY) {
         ASSERT_EQ(metadata->large_arr_ptr, out);
+    }
+
+    if (metadata->arr_type == NULL_ARRAY) {
+        metadata->large_arr = af::array(out);
+        af_print(metadata->large_arr);
     }
 
     af::array gold_sub_cpp(gold_sub);
