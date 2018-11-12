@@ -988,14 +988,35 @@ template<typename T>
 
 //********** end arrayfire custom test asserts ***********
 
+enum TestOutputArrayType {
+    REGULAR_ARRAY,
+    SUB_ARRAY,
+    REORDERED_ARRAY
+};
+
 struct SubArrayTestInfo {
     af::array large_arr;
     af::array large_arr_cpy;
+    af_array large_arr_ptr;
     af::index subarr_s0;
     af::index subarr_s1;
     af::index subarr_s2;
     af::index subarr_s3;
+    TestOutputArrayType arr_type;
 };
+
+af::array genRegularArray(const af::dim4& dims, const af::dtype ty,
+                          SubArrayTestInfo& metadata) {
+    metadata.large_arr = af::randu(dims, ty);
+    metadata.large_arr_cpy = metadata.large_arr.copy();
+    af_print(metadata.large_arr);
+    af_print(metadata.large_arr_cpy);
+    metadata.subarr_s0 = af::span;
+    metadata.subarr_s1 = af::span;
+    metadata.subarr_s2 = af::span;
+    metadata.subarr_s3 = af::span;
+    return metadata.large_arr;
+}
 
 af::array genSubArray(const af::dim4& dims, const af::dtype ty,
                       SubArrayTestInfo& metadata) {
@@ -1027,11 +1048,41 @@ af::array genSubArray(const af::dim4& dims, const af::dtype ty,
     return subarr;
 }
 
-void genSubArray(af_array *out, const unsigned ndims, const dim_t *dims,
-                 const af::dtype ty, SubArrayTestInfo* metadata) {
+af::array genReorderedArray(const af::dim4& dims, const af::dtype ty,
+                          SubArrayTestInfo& metadata) {
+    metadata.large_arr = af::randu(dims, ty);
+    metadata.large_arr_cpy = metadata.large_arr.copy();
+    metadata.subarr_s0 = af::span;
+    metadata.subarr_s1 = af::span;
+    metadata.subarr_s2 = af::span;
+    metadata.subarr_s3 = af::span;
+    return metadata.large_arr;
+}
+
+af::array genTestOutputArray(const af::dim4& dims, const af::dtype ty,
+                             SubArrayTestInfo& metadata,
+                             TestOutputArrayType arr_type) {
+    metadata.arr_type = arr_type;
+    switch (arr_type) {
+    case REGULAR_ARRAY:
+        return genRegularArray(dims, ty, metadata);
+        break;
+    case SUB_ARRAY:
+        return genSubArray(dims, ty, metadata);
+        break;
+    case REORDERED_ARRAY:
+        return genReorderedArray(dims, ty, metadata);
+        break;
+    }
+}
+
+void genTestOutputArray(af_array *out, const unsigned ndims, const dim_t *dims,
+                        const af::dtype ty, SubArrayTestInfo* metadata,
+                        TestOutputArrayType arr_type) {
     af::dim4 arr_dims(ndims, dims);
-    af::array subarr = genSubArray(arr_dims, ty, *metadata);
-    af_retain_array(out, subarr.get());
+    af::array test_output_array = genTestOutputArray(arr_dims, ty, *metadata, arr_type);
+    af_retain_array(out, test_output_array.get());
+    metadata->large_arr_ptr = *out;
 }
 
 void testWriteToSubArray(af::array gold_sub, SubArrayTestInfo& metadata) {
@@ -1049,7 +1100,12 @@ void testWriteToSubArray(af::array gold_sub, SubArrayTestInfo& metadata) {
     ASSERT_ARRAYS_EQ(metadata.large_arr_cpy, metadata.large_arr);
 }
 
-void testWriteToSubArray(af_array gold_sub, SubArrayTestInfo *metadata) {
+void testWriteToSubArray(af_array out, af_array gold_sub,
+                         SubArrayTestInfo *metadata) {
+    if (metadata->arr_type == REGULAR_ARRAY) {
+        ASSERT_EQ(metadata->large_arr_ptr, out);
+    }
+
     af::array gold_sub_cpp(gold_sub);
     testWriteToSubArray(gold_sub_cpp, *metadata);
 }
