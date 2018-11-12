@@ -1009,8 +1009,8 @@ af::array genRegularArray(const af::dim4& dims, const af::dtype ty,
                           SubArrayTestInfo& metadata) {
     metadata.large_arr = af::randu(dims, ty);
     metadata.large_arr_cpy = metadata.large_arr.copy();
-    af_print(metadata.large_arr);
-    af_print(metadata.large_arr_cpy);
+    //af_print(metadata.large_arr);
+    //af_print(metadata.large_arr_cpy);
     metadata.subarr_s0 = af::span;
     metadata.subarr_s1 = af::span;
     metadata.subarr_s2 = af::span;
@@ -1043,14 +1043,23 @@ af::array genSubArray(const af::dim4& dims, const af::dtype ty,
     metadata.subarr_s2 = subarr_s2;
     metadata.subarr_s3 = subarr_s3;
 
-    af_print(large_arr);
+    //af_print(large_arr);
 
     return subarr;
 }
 
 af::array genReorderedArray(const af::dim4& dims, const af::dtype ty,
                           SubArrayTestInfo& metadata) {
-    metadata.large_arr = af::randu(dims, ty);
+    unsigned reorder_0 = 0;
+    unsigned reorder_1 = 2;
+    unsigned reorder_2 = 1;
+
+    af::dim4 out_dims(dims[reorder_0], dims[reorder_1], dims[reorder_2]);
+    metadata.large_arr = af::randu(out_dims, ty);
+    //af_print(metadata.large_arr);
+    metadata.large_arr = af::reorder(metadata.large_arr,
+                                     reorder_0, reorder_1, reorder_2);
+    //af_print(metadata.large_arr);
     metadata.large_arr_cpy = metadata.large_arr.copy();
     metadata.subarr_s0 = af::span;
     metadata.subarr_s1 = af::span;
@@ -1086,16 +1095,16 @@ void genTestOutputArray(af_array *out, const unsigned ndims, const dim_t *dims,
 }
 
 void testWriteToSubArray(af::array gold_sub, SubArrayTestInfo& metadata) {
-    af_print(gold_sub);
-    af_print(metadata.large_arr_cpy);
+    //af_print(gold_sub);
+    //af_print(metadata.large_arr_cpy);
     af::copy(metadata.large_arr_cpy, gold_sub,
              metadata.subarr_s0,
              metadata.subarr_s1,
              metadata.subarr_s2,
              metadata.subarr_s3);
 
-    af_print(metadata.large_arr);
-    af_print(metadata.large_arr_cpy);
+    //af_print(metadata.large_arr);
+    //af_print(metadata.large_arr_cpy);
 
     ASSERT_ARRAYS_EQ(metadata.large_arr_cpy, metadata.large_arr);
 }
