@@ -990,15 +990,15 @@ template<typename T>
 
 enum TestOutputArrayType {
     NULL_ARRAY,
-    REGULAR_ARRAY,
+    FULL_ARRAY,
     SUB_ARRAY,
     REORDERED_ARRAY
 };
 
-struct SubArrayTestInfo {
-    af::array large_arr;
-    af::array large_arr_cpy;
-    af_array large_arr_ptr;
+struct TestOutputArrayInfo {
+    af::array out_arr;
+    af::array out_arr_cpy;
+    af_array out_arr_ptr;
     af::index subarr_s0;
     af::index subarr_s1;
     af::index subarr_s2;
@@ -1007,40 +1007,40 @@ struct SubArrayTestInfo {
 };
 
 af::array genNullArray(const af::dim4& dims, const af::dtype ty,
-                          SubArrayTestInfo& metadata) {
+                       TestOutputArrayInfo& metadata) {
     af::array out;
-    metadata.large_arr = out;
-    metadata.large_arr_cpy = af::randu(dims, ty);
-    //af_print(metadata.large_arr);
-    //af_print(metadata.large_arr_cpy);
+    metadata.out_arr = out;
+    metadata.out_arr_cpy = af::randu(dims, ty);
+    //af_print(metadata.out_arr);
+    //af_print(metadata.out_arr_cpy);
     metadata.subarr_s0 = af::span;
     metadata.subarr_s1 = af::span;
     metadata.subarr_s2 = af::span;
     metadata.subarr_s3 = af::span;
-    return metadata.large_arr;
+    return metadata.out_arr;
 }
 
 af::array genRegularArray(const af::dim4& dims, const af::dtype ty,
-                          SubArrayTestInfo& metadata) {
-    metadata.large_arr = af::randu(dims, ty);
-    metadata.large_arr_cpy = metadata.large_arr.copy();
-    //af_print(metadata.large_arr);
-    //af_print(metadata.large_arr_cpy);
+                          TestOutputArrayInfo& metadata) {
+    metadata.out_arr = af::randu(dims, ty);
+    metadata.out_arr_cpy = metadata.out_arr.copy();
+    //af_print(metadata.out_arr);
+    //af_print(metadata.out_arr_cpy);
     metadata.subarr_s0 = af::span;
     metadata.subarr_s1 = af::span;
     metadata.subarr_s2 = af::span;
     metadata.subarr_s3 = af::span;
-    return metadata.large_arr;
+    return metadata.out_arr;
 }
 
 af::array genSubArray(const af::dim4& dims, const af::dtype ty,
-                      SubArrayTestInfo& metadata) {
+                      TestOutputArrayInfo& metadata) {
     const dim_t pad_size = 2;
-    af::dim4 large_arr_dims(dims[0] > 1 ? dims[0] + 2*pad_size : dims[0],
+    af::dim4 full_arr_dims(dims[0] > 1 ? dims[0] + 2*pad_size : dims[0],
                             dims[1] > 1 ? dims[1] + 2*pad_size : dims[1],
                             dims[2] > 1 ? dims[2] + 2*pad_size : dims[2],
                             dims[3] > 1 ? dims[3] + 2*pad_size : dims[3]);
-    af::array large_arr = af::randu(large_arr_dims, ty);
+    af::array out_arr = af::randu(full_arr_dims, ty);
     af::seq subarr_s0 =
         dims[0] > 1 ? af::seq(pad_size, pad_size + dims[0] - 1) : af::span;
     af::seq subarr_s1 =
@@ -1049,49 +1049,49 @@ af::array genSubArray(const af::dim4& dims, const af::dtype ty,
         dims[2] > 1 ? af::seq(pad_size, pad_size + dims[2] - 1) : af::span;
     af::seq subarr_s3 =
         dims[3] > 1 ? af::seq(pad_size, pad_size + dims[3] - 1) : af::span;
-    af::array subarr = large_arr(subarr_s0, subarr_s1, subarr_s2, subarr_s3);
+    af::array subarr = out_arr(subarr_s0, subarr_s1, subarr_s2, subarr_s3);
 
-    metadata.large_arr = large_arr;
-    metadata.large_arr_cpy = large_arr.copy();
+    metadata.out_arr = out_arr;
+    metadata.out_arr_cpy = out_arr.copy();
     metadata.subarr_s0 = subarr_s0;
     metadata.subarr_s1 = subarr_s1;
     metadata.subarr_s2 = subarr_s2;
     metadata.subarr_s3 = subarr_s3;
 
-    //af_print(large_arr);
+    //af_print(out_arr);
 
     return subarr;
 }
 
 af::array genReorderedArray(const af::dim4& dims, const af::dtype ty,
-                          SubArrayTestInfo& metadata) {
+                            TestOutputArrayInfo& metadata) {
     unsigned reorder_0 = 0;
     unsigned reorder_1 = 2;
     unsigned reorder_2 = 1;
 
     af::dim4 out_dims(dims[reorder_0], dims[reorder_1], dims[reorder_2]);
-    metadata.large_arr = af::randu(out_dims, ty);
-    //af_print(metadata.large_arr);
-    metadata.large_arr = af::reorder(metadata.large_arr,
+    metadata.out_arr = af::randu(out_dims, ty);
+    //af_print(metadata.out_arr);
+    metadata.out_arr = af::reorder(metadata.out_arr,
                                      reorder_0, reorder_1, reorder_2);
-    //af_print(metadata.large_arr);
-    metadata.large_arr_cpy = metadata.large_arr.copy();
+    //af_print(metadata.out_arr);
+    metadata.out_arr_cpy = metadata.out_arr.copy();
     metadata.subarr_s0 = af::span;
     metadata.subarr_s1 = af::span;
     metadata.subarr_s2 = af::span;
     metadata.subarr_s3 = af::span;
-    return metadata.large_arr;
+    return metadata.out_arr;
 }
 
 af::array genTestOutputArray(const af::dim4& dims, const af::dtype ty,
-                             SubArrayTestInfo& metadata,
+                             TestOutputArrayInfo& metadata,
                              TestOutputArrayType arr_type) {
     metadata.arr_type = arr_type;
     switch (arr_type) {
     case NULL_ARRAY:
         return genNullArray(dims, ty, metadata);
         break;
-    case REGULAR_ARRAY:
+    case FULL_ARRAY:
         return genRegularArray(dims, ty, metadata);
         break;
     case SUB_ARRAY:
@@ -1104,7 +1104,7 @@ af::array genTestOutputArray(const af::dim4& dims, const af::dtype ty,
 }
 
 void genTestOutputArray(af_array *out, const unsigned ndims, const dim_t *dims,
-                        const af::dtype ty, SubArrayTestInfo* metadata,
+                        const af::dtype ty, TestOutputArrayInfo* metadata,
                         TestOutputArrayType arr_type) {
     af::dim4 arr_dims(ndims, dims);
     af::array test_output_array = genTestOutputArray(arr_dims, ty, *metadata,
@@ -1113,33 +1113,33 @@ void genTestOutputArray(af_array *out, const unsigned ndims, const dim_t *dims,
     if (arr_type == NULL_ARRAY) {
         *out = 0;
     }
-    metadata->large_arr_ptr = *out;
+    metadata->out_arr_ptr = *out;
 }
 
-void testWriteToSubArray(af::array gold_sub, SubArrayTestInfo& metadata) {
+void testWriteToSubArray(af::array gold_sub, TestOutputArrayInfo& metadata) {
     //af_print(gold_sub);
-    //af_print(metadata.large_arr_cpy);
-    af::copy(metadata.large_arr_cpy, gold_sub,
+    //af_print(metadata.out_arr_cpy);
+    af::copy(metadata.out_arr_cpy, gold_sub,
              metadata.subarr_s0,
              metadata.subarr_s1,
              metadata.subarr_s2,
              metadata.subarr_s3);
 
-    //af_print(metadata.large_arr);
-    //af_print(metadata.large_arr_cpy);
+    //af_print(metadata.out_arr);
+    //af_print(metadata.out_arr_cpy);
 
-    ASSERT_ARRAYS_EQ(metadata.large_arr_cpy, metadata.large_arr);
+    ASSERT_ARRAYS_EQ(metadata.out_arr_cpy, metadata.out_arr);
 }
 
 void testWriteToSubArray(af_array out, af_array gold_sub,
-                         SubArrayTestInfo *metadata) {
-    if (metadata->arr_type == REGULAR_ARRAY) {
-        ASSERT_EQ(metadata->large_arr_ptr, out);
+                         TestOutputArrayInfo *metadata) {
+    if (metadata->arr_type == FULL_ARRAY) {
+        ASSERT_EQ(metadata->out_arr_ptr, out);
     }
 
     if (metadata->arr_type == NULL_ARRAY) {
-        metadata->large_arr = af::array(out);
-        af_print(metadata->large_arr);
+        metadata->out_arr = af::array(out);
+        af_print(metadata->out_arr);
     }
 
     af::array gold_sub_cpp(gold_sub);

@@ -873,7 +873,7 @@ TEST(Approx1, UseNullOutputArrayV2) {
 
     dim_t out_subarr_dims = 5;
     af_array out_subarr = 0;
-    SubArrayTestInfo metadata;
+    TestOutputArrayInfo metadata;
     genTestOutputArray(&out_subarr, 1, &out_subarr_dims, f32, &metadata,
                        NULL_ARRAY);
     printf("out_subarr before approx1: 0x%x\n", out_subarr);
@@ -931,9 +931,9 @@ TEST(Approx1, UseExistingOutputArrayV2) {
 
     dim_t out_subarr_dims = 5;
     af_array out_subarr = 0;
-    SubArrayTestInfo metadata;
+    TestOutputArrayInfo metadata;
     genTestOutputArray(&out_subarr, 1, &out_subarr_dims, f32, &metadata,
-                       REGULAR_ARRAY);
+                       FULL_ARRAY);
     ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
 
     dim_t gold_subarr_dims = 5;
@@ -958,7 +958,7 @@ TEST(Approx1, UseExistingOutputSlice) {
 
     dim_t out_subarr_dims = 5;
     af_array out_subarr = 0;
-    SubArrayTestInfo metadata;
+    TestOutputArrayInfo metadata;
     genTestOutputArray(&out_subarr, 1, &out_subarr_dims, f32, &metadata,
                        SUB_ARRAY);
     ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
@@ -987,7 +987,7 @@ TEST(Approx1, UseReorderedOutputArray) {
 
     dim_t out_subarr_dims[2] = {5, 3};
     af_array out_subarr = 0;
-    SubArrayTestInfo metadata;
+    TestOutputArrayInfo metadata;
     genTestOutputArray(&out_subarr, 2, &out_subarr_dims[0], f32, &metadata,
                        REORDERED_ARRAY);
     ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
