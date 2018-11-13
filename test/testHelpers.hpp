@@ -36,6 +36,76 @@ typedef unsigned short ushort;
 
 namespace {
 
+enum TestOutputArrayType {
+    NULL_ARRAY,
+    FULL_ARRAY,
+    SUB_ARRAY,
+    REORDERED_ARRAY
+};
+
+struct TestOutputArrayInfo {
+    af::array out_arr;
+    af::array out_arr_cpy;
+    af_array out_arr_ptr;
+    af::index subarr_s0;
+    af::index subarr_s1;
+    af::index subarr_s2;
+    af::index subarr_s3;
+    TestOutputArrayType arr_type;
+};
+
+::testing::AssertionResult assertArrayEq(std::string aName, std::string bName,
+                                            const af::array& a, const af::array& b,
+                                            float maxAbsDiff = 0.f);
+
+::testing::AssertionResult
+testWriteToOutputArray(std::string gold_name, std::string result_name, af::array gold,
+                       TestOutputArrayInfo& metadata) {
+    //af_print(gold_sub);
+    //af_print(metadata.out_arr_cpy);
+    af::copy(metadata.out_arr_cpy, gold,
+             metadata.subarr_s0,
+             metadata.subarr_s1,
+             metadata.subarr_s2,
+             metadata.subarr_s3);
+
+    //af_print(metadata.out_arr);
+    //af_print(metadata.out_arr_cpy);
+
+    return assertArrayEq(gold_name, result_name, metadata.out_arr_cpy, metadata.out_arr);
+
+    // ASSERT_ARRAYS_EQ(metadata.out_arr_cpy, metadata.out_arr);
+    // return ::testing::AssertionFailure()
+    //     << "VALUE DIFFERS at "
+    //     << minimalDim4(coords, aDims) << ":\n"
+    //     << printContext(a, aName, b, bName, aDims, aStrides, idx);
+}
+
+::testing::AssertionResult
+testWriteToOutputArray(std::string gold_name, std::string result_name, af_array gold, af_array out,
+                       TestOutputArrayInfo *metadata) {
+    if (metadata->arr_type == NULL_ARRAY) {
+        af_array out_retain = 0;
+        af_retain_array(&out_retain, out);
+        metadata->out_arr = af::array(out_retain);
+    }
+
+    if (metadata->arr_type == FULL_ARRAY) {
+        if (metadata->out_arr_ptr != out) {
+            return ::testing::AssertionFailure()
+                << "af_array POINTER MISMATCH:\n"
+                << "  Actual: " << out << "\n"
+                << "Expected: " << metadata->out_arr_ptr;
+        }
+    }
+
+    af_array gold_retain = 0;
+    af_retain_array(&gold_retain, gold);
+    af::array gold_cpp(gold_retain);
+
+    return testWriteToOutputArray(gold_name, result_name, gold_cpp, *metadata);
+}
+
 std::string readNextNonEmptyLine(std::ifstream &file)
 {
     std::string result = "";
@@ -790,8 +860,22 @@ template<typename T>
 }
 
 ::testing::AssertionResult assertArrayEq(std::string aName, std::string bName,
+                                         std::string metadataName,
+                                         const af_array a, const af_array b,
+                                         TestOutputArrayInfo *metadata) {
+    return testWriteToOutputArray(aName, bName, a, b, metadata);
+}
+
+::testing::AssertionResult assertArrayEq(std::string aName, std::string bName,
+                                         std::string metadataName,
                                          const af::array& a, const af::array& b,
-                                         float maxAbsDiff = 0.f) {
+                                         TestOutputArrayInfo &metadata) {
+    return testWriteToOutputArray(aName, bName, a, metadata);
+}
+
+::testing::AssertionResult assertArrayEq(std::string aName, std::string bName,
+                                         const af::array& a, const af::array& b,
+                                         float maxAbsDiff) {
     af::dtype aType = a.type();
     af::dtype bType = b.type();
     if (aType != bType)
@@ -954,6 +1038,14 @@ template<typename T>
 #define ASSERT_ARRAYS_EQ(EXPECTED, ACTUAL) \
     EXPECT_PRED_FORMAT2(assertArrayEq, EXPECTED, ACTUAL)
 
+/// Compares two af::array or af_arrays for their types, dims, and values (strict equality).
+/// Can be configured if the special array is null, a full-sized array, a sub
+///
+/// \param[in] EXPECTED The expected array of the assertion
+/// \param[in] ACTUAL The actual resulting array from the calculation
+#define ASSERT_SPECIAL_ARRAYS_EQ(EXPECTED, ACTUAL, META)               \
+    EXPECT_PRED_FORMAT3(assertArrayEq, EXPECTED, ACTUAL, META)
+
 /// Compares a std::vector with an af::/af_array for their types, dims, and values (strict equality).
 ///
 /// \param[in] EXPECTED_VEC The vector that represents the expected array
@@ -988,24 +1080,6 @@ template<typename T>
 
 //********** end arrayfire custom test asserts ***********
 
-enum TestOutputArrayType {
-    NULL_ARRAY,
-    FULL_ARRAY,
-    SUB_ARRAY,
-    REORDERED_ARRAY
-};
-
-struct TestOutputArrayInfo {
-    af::array out_arr;
-    af::array out_arr_cpy;
-    af_array out_arr_ptr;
-    af::index subarr_s0;
-    af::index subarr_s1;
-    af::index subarr_s2;
-    af::index subarr_s3;
-    TestOutputArrayType arr_type;
-};
-
 af::array genNullArray(const af::dim4& dims, const af::dtype ty,
                        TestOutputArrayInfo& metadata) {
     af::array out;
@@ -1037,9 +1111,9 @@ af::array genSubArray(const af::dim4& dims, const af::dtype ty,
                       TestOutputArrayInfo& metadata) {
     const dim_t pad_size = 2;
     af::dim4 full_arr_dims(dims[0] > 1 ? dims[0] + 2*pad_size : dims[0],
-                            dims[1] > 1 ? dims[1] + 2*pad_size : dims[1],
-                            dims[2] > 1 ? dims[2] + 2*pad_size : dims[2],
-                            dims[3] > 1 ? dims[3] + 2*pad_size : dims[3]);
+                           dims[1] > 1 ? dims[1] + 2*pad_size : dims[1],
+                           dims[2] > 1 ? dims[2] + 2*pad_size : dims[2],
+                           dims[3] > 1 ? dims[3] + 2*pad_size : dims[3]);
     af::array out_arr = af::randu(full_arr_dims, ty);
     af::seq subarr_s0 =
         dims[0] > 1 ? af::seq(pad_size, pad_size + dims[0] - 1) : af::span;
@@ -1114,36 +1188,6 @@ void genTestOutputArray(af_array *out, const unsigned ndims, const dim_t *dims,
         *out = 0;
     }
     metadata->out_arr_ptr = *out;
-}
-
-void testWriteToSubArray(af::array gold_sub, TestOutputArrayInfo& metadata) {
-    //af_print(gold_sub);
-    //af_print(metadata.out_arr_cpy);
-    af::copy(metadata.out_arr_cpy, gold_sub,
-             metadata.subarr_s0,
-             metadata.subarr_s1,
-             metadata.subarr_s2,
-             metadata.subarr_s3);
-
-    //af_print(metadata.out_arr);
-    //af_print(metadata.out_arr_cpy);
-
-    ASSERT_ARRAYS_EQ(metadata.out_arr_cpy, metadata.out_arr);
-}
-
-void testWriteToSubArray(af_array out, af_array gold_sub,
-                         TestOutputArrayInfo *metadata) {
-    if (metadata->arr_type == FULL_ARRAY) {
-        ASSERT_EQ(metadata->out_arr_ptr, out);
-    }
-
-    if (metadata->arr_type == NULL_ARRAY) {
-        metadata->out_arr = af::array(out);
-        af_print(metadata->out_arr);
-    }
-
-    af::array gold_sub_cpp(gold_sub);
-    testWriteToSubArray(gold_sub_cpp, *metadata);
 }
 
 #pragma GCC diagnostic pop

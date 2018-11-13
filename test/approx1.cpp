@@ -841,163 +841,80 @@ TEST(Approx1, CPPEmptyPosAndInput)
     ASSERT_TRUE(interp.isempty());
 }
 
-TEST(Approx1, UseNullInitialOutput) {
-    float h_in[3] = {10, 20, 30};
-    dim_t h_in_dims = 3;
+void testApprox1(float* h_gold, dim4 gold_dim, float* h_in, dim4 in_dim, float* h_pos, dim4 pos_dim, TestOutputArrayType out_array_type) {
 
     af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
-
-    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
-    dim_t h_pos_dims = 5;
     af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
+    ASSERT_SUCCESS(af_create_array(&in, h_in, in_dim.ndims(), in_dim.get(), f32));
+    ASSERT_SUCCESS(af_create_array(&pos, h_pos, pos_dim.ndims(), pos_dim.get(), f32));
 
-    af_array out = 0;
-    ASSERT_SUCCESS(af_approx1(&out, in, pos, AF_INTERP_LINEAR, 0));
-
-    ASSERT_FALSE(out == 0);
-}
-
-TEST(Approx1, UseNullOutputArrayV2) {
-    float h_in[3] = {10, 20, 30};
-    dim_t h_in_dims = 3;
-
-    af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
-
-    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
-    dim_t h_pos_dims = 5;
-    af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
-
-    dim_t out_subarr_dims = 5;
     af_array out_subarr = 0;
     TestOutputArrayInfo metadata;
-    genTestOutputArray(&out_subarr, 1, &out_subarr_dims, f32, &metadata,
-                       NULL_ARRAY);
-    printf("out_subarr before approx1: 0x%x\n", out_subarr);
-    ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
-    printf("out_subarr after approx1: 0x%x\n", out_subarr);
-
-    dim_t gold_subarr_dims = 5;
-    float h_gold_subarr[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
-    af_array gold_subarr = 0;
-    ASSERT_SUCCESS(af_create_array(&gold_subarr, &h_gold_subarr[0],
-                                   1, &gold_subarr_dims, f32));
-    testWriteToSubArray(out_subarr, gold_subarr, &metadata);
-}
-
-TEST(Approx1, UseExistingOutputArray) {
-    float h_in[3] = {10, 20, 30};
-    dim_t h_in_dims = 3;
-
-    af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
-
-    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
-    dim_t h_pos_dims = 5;
-    af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
-
-    dim_t h_out_dims = 5;
-    af_array out_ptr = 0;
-    ASSERT_SUCCESS(af_create_handle(&out_ptr, 1, &h_out_dims, f32));
-    af_array out_ptr_copy = out_ptr;
-    ASSERT_SUCCESS(af_approx1(&out_ptr, in, pos, AF_INTERP_LINEAR, 0));
-
-    // Verify that the original output af_array memory was used
-    ASSERT_EQ(out_ptr_copy, out_ptr);
-
-    af_array out_no_alloc = 0;
-    ASSERT_SUCCESS(af_approx1(&out_no_alloc, in, pos, AF_INTERP_LINEAR, 0));
-
-    // Verify that the contents of an approx with a previously allocated output
-    // and that of a non-allocated output match
-    ASSERT_ARRAYS_EQ(out_ptr, out_no_alloc);
-}
-
-TEST(Approx1, UseExistingOutputArrayV2) {
-    float h_in[3] = {10, 20, 30};
-    dim_t h_in_dims = 3;
-
-    af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
-
-    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
-    dim_t h_pos_dims = 5;
-    af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
-
-    dim_t out_subarr_dims = 5;
-    af_array out_subarr = 0;
-    TestOutputArrayInfo metadata;
-    genTestOutputArray(&out_subarr, 1, &out_subarr_dims, f32, &metadata,
-                       FULL_ARRAY);
+    genTestOutputArray(&out_subarr, gold_dim.ndims(), gold_dim.get(), f32, &metadata, out_array_type);
     ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
 
-    dim_t gold_subarr_dims = 5;
-    float h_gold_subarr[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
     af_array gold_subarr = 0;
-    ASSERT_SUCCESS(af_create_array(&gold_subarr, &h_gold_subarr[0],
-                                   1, &gold_subarr_dims, f32));
-    testWriteToSubArray(out_subarr, gold_subarr, &metadata);
+    ASSERT_SUCCESS(af_create_array(&gold_subarr, h_gold, gold_dim.ndims(), gold_dim.get(), f32));
+    ASSERT_SPECIAL_ARRAYS_EQ(gold_subarr, out_subarr, &metadata);
 }
 
-TEST(Approx1, UseExistingOutputSlice) {
+TEST(Approx1, UseNullOutputArray) {
     float h_in[3] = {10, 20, 30};
-    dim_t h_in_dims = 3;
-
-    af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 1, &h_in_dims, f32));
+    dim4 h_in_dims(3);
 
     float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
-    dim_t h_pos_dims = 5;
-    af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
+    dim4 h_pos_dims (5);
 
-    dim_t out_subarr_dims = 5;
-    af_array out_subarr = 0;
-    TestOutputArrayInfo metadata;
-    genTestOutputArray(&out_subarr, 1, &out_subarr_dims, f32, &metadata,
-                       SUB_ARRAY);
-    ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
-
-    dim_t gold_subarr_dims = 5;
+    dim4 gold_subarr_dim (5);
     float h_gold_subarr[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
-    af_array gold_subarr = 0;
-    ASSERT_SUCCESS(af_create_array(&gold_subarr, &h_gold_subarr[0],
-                                   1, &gold_subarr_dims, f32));
-    testWriteToSubArray(out_subarr, gold_subarr, &metadata);
+
+    SCOPED_TRACE("UseNullOutputArray");
+    testApprox1(h_gold_subarr, gold_subarr_dim, h_in, h_in_dims, h_pos, h_pos_dims, NULL_ARRAY);
+}
+
+TEST(Approx1, UseFullExistingOutputArray) {
+    float h_in[3] = {10, 20, 30};
+    dim4 h_in_dims(3);
+
+    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
+    dim4 h_pos_dims (5);
+
+    dim4 gold_subarr_dim (5);
+    float h_gold_subarr[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
+
+    SCOPED_TRACE("UseFullExistingOutputArray");
+    testApprox1(h_gold_subarr, gold_subarr_dim, h_in, h_in_dims, h_pos, h_pos_dims, FULL_ARRAY);
+}
+
+TEST(Approx1, UseExistingOutputSubArray) {
+    float h_in[3] = {10, 20, 30};
+    dim4 h_in_dims(3);
+
+    float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
+    dim4 h_pos_dims (5);
+
+    dim4 gold_subarr_dim (5);
+    float h_gold_subarr[5] = {10.0, 15.0, 20.0, 25.0, 30.0};
+
+    SCOPED_TRACE("UseExistingOutputSubArray");
+    testApprox1(h_gold_subarr, gold_subarr_dim, h_in, h_in_dims, h_pos, h_pos_dims, SUB_ARRAY);
 }
 
 TEST(Approx1, UseReorderedOutputArray) {
+
     float h_in[9] = {10, 20, 30,
                      40, 50, 60,
                      70, 80, 90};
-    dim_t h_in_dims[2] = {3, 3};
-
-    af_array in = 0;
-    ASSERT_SUCCESS(af_create_array(&in, &h_in[0], 2, &h_in_dims[0], f32));
+    dim4 h_in_dims(3, 3);
 
     float h_pos[5] = {0.0, 0.5, 1.0, 1.5, 2.0};
-    dim_t h_pos_dims = 5;
-    af_array pos = 0;
-    ASSERT_SUCCESS(af_create_array(&pos, &h_pos[0], 1, &h_pos_dims, f32));
+    dim4 h_pos_dims (5);
 
-    dim_t out_subarr_dims[2] = {5, 3};
-    af_array out_subarr = 0;
-    TestOutputArrayInfo metadata;
-    genTestOutputArray(&out_subarr, 2, &out_subarr_dims[0], f32, &metadata,
-                       REORDERED_ARRAY);
-    ASSERT_SUCCESS(af_approx1(&out_subarr, in, pos, AF_INTERP_LINEAR, 0));
-
-    dim_t gold_subarr_dims[2] = {5, 3};
+    dim4 gold_subarr_dim(5, 3);
     float h_gold_subarr[15] = {10.0, 15.0, 20.0, 25.0, 30.0,
                                40.0, 45.0, 50.0, 55.0, 60.0,
                                70.0, 75.0, 80.0, 85.0, 90.0};
-    af_array gold_subarr = 0;
-    ASSERT_SUCCESS(af_create_array(&gold_subarr, &h_gold_subarr[0],
-                                   2, &gold_subarr_dims[0], f32));
-    testWriteToSubArray(out_subarr, gold_subarr, &metadata);
+
+    SCOPED_TRACE("UseReorderedOutputArray");
+    testApprox1(h_gold_subarr, gold_subarr_dim, h_in, h_in_dims, h_pos, h_pos_dims, REORDERED_ARRAY);
 }
