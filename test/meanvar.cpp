@@ -65,14 +65,14 @@ struct meanvar_test {
                af_var_bias bias, int dim,
                vector<double> &mean, vector<double> &variance)
     : test_description_(description)
-    , in_(0)
-    , weights_(0)
+    , in_(in)
+    , weights_(weights)
     , bias_(bias)
     , dim_(dim) {
-    af_retain_array(&in_, in);
-    if(weights) {
-        af_retain_array(&weights_, weights);
-    }
+    // af_retain_array(&in_, in);
+    // if(weights) {
+    //     af_retain_array(&weights_, weights);
+    // }
 
     mean_.reserve(mean.size());
     variance_.reserve(variance.size());
@@ -94,7 +94,7 @@ public:
       af_array in = 0;
       af_cast(&in, test.in_, (af_dtype) dtype_traits<T>::af_type);
 
-      EXPECT_EQ(AF_SUCCESS, af_meanvar(&mean, &var, in, test.weights_, test.bias_, test.dim_));
+      ASSERT_SUCCESS(af_meanvar(&mean, &var, in, test.weights_, test.bias_, test.dim_));
 
       vector<outType<T>> h_mean(test.mean_.size()), h_var(test.variance_.size());
 
@@ -176,14 +176,19 @@ meanvar_test_gen(string name, int in_index, int weight_index, af_var_bias bias, 
       outputs.push_back({249.50, 749.50, 1249.50, 1749.50});
       outputs.push_back(vector<double>(4, 20875));
   }
+  for (size_t i = 0; i < inputs.size(); ++i) {
+      if (i != in_index) {
+          af_release_array(inputs[i]);
+      }
+  }
   if(weight_index == -1) {
-      return meanvar_test<T> (name,
-                              inputs[in_index],
-                              empty,
-                              bias,
-                              dim,
-                              outputs[mean_index],
-                              outputs[var_index]);
+      return meanvar_test<T>(name,
+                             inputs[in_index],
+                             empty,
+                             bias,
+                             dim,
+                             outputs[mean_index],
+                             outputs[var_index]);
   } else {
       return meanvar_test<T>(name,
                              inputs[in_index],
