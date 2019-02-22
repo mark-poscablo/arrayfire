@@ -508,3 +508,5 @@ TEST(Assert, TestVecArrayNearExceedThresh) {
     ASSERT_FALSE(assertArrayNear("gold", "goldDims", "out", "maxAbsDiff", gold,
                                  goldDims, out, maxDiff));
 }
+
+TEST(BasicTests, SimulateFailure) { ASSERT_TRUE(false); }
