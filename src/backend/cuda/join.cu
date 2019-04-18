@@ -12,6 +12,11 @@
 #include <join.hpp>
 #include <kernel/join.hpp>
 #include <stdexcept>
+#include <common/jit/Node.hpp>
+#include <jit/BufferNode.hpp>
+
+using common::Node;
+using cuda::jit::BufferNode;
 
 namespace cuda {
 template<int dim>
@@ -41,6 +46,7 @@ Array<Tx> join(const int dim, const Array<Tx> &first, const Array<Ty> &second) {
     }
 
     Array<Tx> out = createEmptyArray<Tx>(odims);
+
 
     af::dim4 zero(0, 0, 0, 0);
 
@@ -128,19 +134,65 @@ Array<T> join(const int dim, const std::vector<Array<T>> &inputs) {
 
     Array<T> out = createEmptyArray<T>(odims);
 
-    switch (n_arrays) {
-        case 1: join_wrapper<T, 1>(dim, out, inputs); break;
-        case 2: join_wrapper<T, 2>(dim, out, inputs); break;
-        case 3: join_wrapper<T, 3>(dim, out, inputs); break;
-        case 4: join_wrapper<T, 4>(dim, out, inputs); break;
-        case 5: join_wrapper<T, 5>(dim, out, inputs); break;
-        case 6: join_wrapper<T, 6>(dim, out, inputs); break;
-        case 7: join_wrapper<T, 7>(dim, out, inputs); break;
-        case 8: join_wrapper<T, 8>(dim, out, inputs); break;
-        case 9: join_wrapper<T, 9>(dim, out, inputs); break;
-        case 10: join_wrapper<T, 10>(dim, out, inputs); break;
+    std::vector<af_seq> fidx = {
+        af_span,
+        {0, idims[0][1], 1},
+        af_span,
+        af_span
+    };
+
+    // std::vector<af_seq> sidx = {
+    //     dim == 0 ? {fdims[0], fdims[0] + sdims[0], 1} : af_span,
+    //     dim == 1 ? {fdims[1], fdims[1] + sdims[1], 1} : af_span,
+    //     dim == 2 ? {fdims[2], fdims[2] + sdims[2], 1} : af_span,
+    //     dim == 3 ? {fdims[3], fdims[3] + sdims[3], 1} : af_span
+    // };
+
+    std::vector<af_seq> sidx = {
+        af_span,
+        {idims[0][1], idims[0][1] + idims[1][1], 1},
+        af_span,
+        af_span
+    };
+
+    std::vector<af_seq> tidx = {
+        af_span,
+        {idims[0][1] + idims[1][1], idims[0][1] + idims[1][1] + idims[2][1] - 1, 1},
+        af_span,
+        af_span
+    };
+
+    using std::vector;
+    vector<Array<T>> sout;
+    sout.push_back(createSubArray<T>(out, fidx, false));
+    sout.push_back(createSubArray<T>(out, sidx, false));
+    sout.push_back(createSubArray<T>(out, tidx, false));
+    vector<Array<T>*> ssout;
+    vector<Array<T>*> sinput;
+    for(int i = 0; i < sout.size(); i++) {
+        ssout.push_back(&sout[i]);
+        sinput.push_back((Array<T>*)&inputs[i]);
     }
+
+    evalMultiple(ssout, sinput);
+
+    //for (Array<T> *array : output_arrays) array->node = bufferNodePtr<T>();
     return out;
+
+
+    //switch (n_arrays) {
+    //    case 1: join_wrapper<T, 1>(dim, out, inputs); break;
+    //    case 2: join_wrapper<T, 2>(dim, out, inputs); break;
+    //    case 3: join_wrapper<T, 3>(dim, out, inputs); break;
+    //    case 4: join_wrapper<T, 4>(dim, out, inputs); break;
+    //    case 5: join_wrapper<T, 5>(dim, out, inputs); break;
+    //    case 6: join_wrapper<T, 6>(dim, out, inputs); break;
+    //    case 7: join_wrapper<T, 7>(dim, out, inputs); break;
+    //    case 8: join_wrapper<T, 8>(dim, out, inputs); break;
+    //    case 9: join_wrapper<T, 9>(dim, out, inputs); break;
+    //    case 10: join_wrapper<T, 10>(dim, out, inputs); break;
+    //}
+    //return out;
 }
 
 #define INSTANTIATE(Tx, Ty)                                                \

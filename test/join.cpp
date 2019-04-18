@@ -198,3 +198,62 @@ TEST(JoinMany1, CPP) {
     array gold   = join(dim, a0, join(dim, a1, join(dim, a2, a3)));
     ASSERT_EQ(sum<float>(output - gold), 0);
 }
+
+// TEST(Join, MarkTest) {
+//     array first = af::constant(1, 3, 3);
+//     array second = af::constant(2, 3, 5);
+//     int join_dim = 1;
+//     array join0 = join(join_dim, first, second);
+
+//     af_print(first);
+//     af_print(second);
+//     af_print(join0);
+
+//     af::dim4 odims;
+//     af::dim4 fdims = first.dims();
+//     af::dim4 sdims = second.dims();
+
+//     for (int i = 0; i < 4; i++) {
+//         if (i == join_dim) {
+//             odims[i] = fdims[i] + sdims[i];
+//         } else {
+//             odims[i] = fdims[i];
+//         }
+//     }
+//     array join1 = af::constant(0, odims);
+//     af_seq fidx[4] = {
+//         {0, fdims[0], 1},
+//         {0, fdims[1], 1},
+//         {0, fdims[2], 1},
+//         {0, fdims[3], 1}
+//     };
+
+//     af_seq sidx[4] = {
+//         join_dim == 0 ? {fdims[0], fdims[0] + sdims[0], 1} : af_span,
+//         join_dim == 1 ? {fdims[1], fdims[1] + sdims[1], 1} : af_span,
+//         join_dim == 2 ? {fdims[2], fdims[2] + sdims[2], 1} : af_span,
+//         join_dim == 3 ? {fdims[3], fdims[3] + sdims[3], 1} : af_span
+//     };
+//     join1(fidx[0], fidx[1], fidx[2], fidx[3]) = first;
+//     join1(sidx[0], sidx[1], sidx[2], sidx[3]) = second;
+
+//     af_print(join1);
+// }
+
+TEST(Join, JIT_Dim1) {
+    array first = af::constant(1, 3, 3);
+    array second = af::constant(2, 3, 5);
+    int join_dim = 1;
+    array join0 = join(join_dim, first, second);
+    af_print(join0);
+}
+
+TEST(Join, JIT_Join3) {
+    array first = af::constant(1, 30, 33) * 3;
+    array second = af::constant(2, 30, 4) - 50;
+    array third = af::randu(30, 5);
+
+    int join_dim = 1;
+    array join0 = join(join_dim, first, third, second);
+    af_print(join0);
+}

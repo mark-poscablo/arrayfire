@@ -191,6 +191,30 @@ void evalMultiple(std::vector<Array<T> *> arrays) {
     return;
 }
 
+    template<typename T>
+    void evalMultiple(std::vector<Array<T> *>& outputs, std::vector<Array<T> *> arrays){
+        vector<Param<T>> outputs_;
+        vector<Node *> nodes;
+
+        for (int i = 0; i < arrays.size(); i++) {
+            if (arrays[i]->isReady()) {
+                arrays[i]->ready = true;
+                arrays[i]->setId(getActiveDeviceId());
+                arrays[i]->data = outputs[i]->data;
+                arrays[i]->info = outputs[i]->info;
+                //shared_ptr<T>(memAlloc<T>(array->elements()).release(), memFree<T>);
+            }
+
+        outputs_.push_back(*arrays[i]);
+        //output_arrays.push_back(&inputs[i]);
+        nodes.push_back(arrays[i]->node.get());
+    }
+
+    evalNodes(outputs_, nodes);
+
+    return;
+    }
+
 template<typename T>
 Array<T>::~Array() {}
 
@@ -417,6 +441,7 @@ void Array<T>::setDataDims(const dim4 &new_dims) {
     template void writeDeviceDataArray<T>(                                    \
         Array<T> & arr, const void *const data, const size_t bytes);          \
     template void evalMultiple<T>(std::vector<Array<T> *> arrays);            \
+    template void evalMultiple<T>(std::vector<Array<T> *>& outputs, std::vector<Array<T> *> arrays); \
     template void Array<T>::setDataDims(const dim4 &new_dims);
 
 INSTANTIATE(float)

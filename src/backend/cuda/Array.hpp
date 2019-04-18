@@ -37,6 +37,9 @@ template<typename T>
 void evalMultiple(std::vector<Array<T> *> arrays);
 
 template<typename T>
+void evalMultiple(std::vector<Array<T> *>& outputs, std::vector<Array<T> *> arrays);
+
+template<typename T>
 Array<T> createNodeArray(const af::dim4 &size, common::Node_ptr node);
 
 template<typename T>
@@ -223,6 +226,7 @@ class Array {
     common::Node_ptr getNode() const;
 
     friend void evalMultiple<T>(std::vector<Array<T> *> arrays);
+    friend void evalMultiple<T>(std::vector<Array<T> *>& outputs, std::vector<Array<T> *> arrays);
     friend Array<T> createValueArray<T>(const af::dim4 &size, const T &value);
     friend Array<T> createHostDataArray<T>(const af::dim4 &size,
                                            const T *const data);

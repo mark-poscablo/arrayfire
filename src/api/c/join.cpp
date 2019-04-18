@@ -34,6 +34,10 @@ static inline af_array join_many(const int dim, const unsigned n_arrays,
     for (int i = 0; i < (int)n_arrays; i++) {
         inputs_.push_back(getArray<T>(inputs[i]));
     }
+
+    dim4 odims(inputs_[0].dims()[0], inputs_[0].dims()[1] + inputs_[1].dims()[1] + inputs_[2].dims()[1]);
+    std::cout << odims << std::endl;
+
     return getHandle(join<T>(dim, inputs_));
 }
 
