@@ -20,6 +20,8 @@
 #include <string>
 #include <type_traits>
 
+#include <iostream>
+
 #ifdef OS_WIN
 #include <Windows.h>
 #else
@@ -133,8 +135,77 @@ LibHandle openDynLibrary(const af_backend bknd_idx) {
     typedef af_err (*func)(int*);
 
     LibHandle retVal = nullptr;
+    // if (bknd_idx == AF_BACKEND_CPU) {
+    //     if ((retVal = loadLibrary("/home/mark/Downloads/arrayfire/lib64/libafcuda.so.3"))) {
+    //     // if ((retVal = loadLibrary("./src/backend/cpu/libafcpu.so.3"))) {
+    //     // if ((retVal = loadLibrary("/home/mark/Documents/arrayfire/build/src/backend/cpu/libafcpu.so.3.6.3"))) {
+    //         // AF_TRACE("Found: {}", join_path(paths[i], bkndLibName));
+
+    //         AF_TRACE("openDynLibrary: retVal == {}", retVal);
+    //         func count_func =
+    //             (func)getFunctionPointer(retVal, "af_get_device_count");
+    //         if (count_func) {
+    //             int count = 0;
+    //             count_func(&count);
+    //             AF_TRACE("Device Count: {}.", count);
+    //             if (count == 0) {
+    //                 retVal = nullptr;
+    //                 // continue;
+    //             }
+    //         }
+
+    //         if (show_load_path) { printf("Using %s\n", bkndLibName.c_str()); }
+    //         // break;
+    //     }
+    // }
+    // else if (bknd_idx == AF_BACKEND_CUDA) {
+    //     // if ((retVal = loadLibrary("/home/mark/Downloads/arrayfire/lib64/libafcuda.so.3"))) {
+    //     if ((retVal = loadLibrary("./src/backend/cuda/libafcuda.so.3"))) {
+    //     // if ((retVal = loadLibrary("/home/mark/Documents/arrayfire/build/src/backend/cpu/libafcuda.so.3"))) {
+    //         // AF_TRACE("Found: {}", join_path(paths[i], bkndLibName));
+
+    //         AF_TRACE("openDynLibrary: retVal == {}", retVal);
+    //         func count_func =
+    //             (func)getFunctionPointer(retVal, "af_get_device_count");
+    //         if (count_func) {
+    //             int count = 0;
+    //             count_func(&count);
+    //             AF_TRACE("Device Count: {}.", count);
+    //             if (count == 0) {
+    //                 retVal = nullptr;
+    //                 // continue;
+    //             }
+    //         }
+
+    //         if (show_load_path) { printf("Using %s\n", bkndLibName.c_str()); }
+    //         // break;
+    //     }
+    // }
+    // else {
+    //     // if ((retVal = loadLibrary("/home/mark/Downloads/arrayfire/lib64/libafopencl.so.3"))) {
+    //     if ((retVal = loadLibrary("./src/backend/opencl/libafopencl.so.3"))) {
+    //         // AF_TRACE("Found: {}", join_path(paths[i], bkndLibName));
+
+    //         AF_TRACE("openDynLibrary: retVal == {}", retVal);
+    //         func count_func =
+    //             (func)getFunctionPointer(retVal, "af_get_device_count");
+    //         if (count_func) {
+    //             int count = 0;
+    //             count_func(&count);
+    //             AF_TRACE("Device Count: {}.", count);
+    //             if (count == 0) {
+    //                 retVal = nullptr;
+    //                 // continue;
+    //             }
+    //         }
+
+    //         if (show_load_path) { printf("Using %s\n", bkndLibName.c_str()); }
+    //         // break;
+    //     }
+    // }
     for (size_t i = 0; i < extent<decltype(paths)>::value; i++) {
         AF_TRACE("Attempting: {}", paths[i]);
+        AF_TRACE("i: {}", i);
         if ((retVal = loadLibrary(join_path(paths[i], bkndLibName).c_str()))) {
             AF_TRACE("Found: {}", join_path(paths[i], bkndLibName));
 
@@ -151,6 +222,7 @@ LibHandle openDynLibrary(const af_backend bknd_idx) {
             }
 
             if (show_load_path) { printf("Using %s\n", bkndLibName.c_str()); }
+            AF_TRACE("YAY success, breaking");
             break;
         }
     }
@@ -180,8 +252,10 @@ AFSymbolManager::AFSymbolManager()
     // Decremeting loop. The last successful backend loaded will be the most
     // prefered one.
     for (int i = NUM_BACKENDS - 1; i >= 0; i--) {
+        AF_TRACE("AFSymbolManager ctor: i == {}", i);
         int backend          = order[i] >> 1;  // 2 4 1 -> 1 2 0
         bkndHandles[backend] = openDynLibrary(order[i]);
+        AF_TRACE("AFSymbolManager ctor: bkndHandles[{}] == {}", backend, bkndHandles[backend]);
         if (bkndHandles[backend]) {
             activeHandle  = bkndHandles[backend];
             activeBackend = (af_backend)order[i];
@@ -211,6 +285,7 @@ unsigned AFSymbolManager::getBackendCount() { return numBackends; }
 int AFSymbolManager::getAvailableBackends() { return backendsAvailable; }
 
 af_err AFSymbolManager::setBackend(af::Backend bknd) {
+    AF_TRACE("setBackend: bknd == {}", bknd);
     if (bknd == AF_BACKEND_DEFAULT) {
         if (defaultHandle) {
             activeHandle  = defaultHandle;
@@ -226,6 +301,39 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
         activeBackend = bknd;
         return AF_SUCCESS;
     } else {
+        UNIFIED_ERROR_LOAD_LIB();
+    }
+}
+
+af_err AFSymbolManager::setBackendLib(af::Backend bknd, const char *libpath) {
+    string bkndLibName  = getBkndLibName(bknd);
+    string show_flag    = getEnvVar("AF_SHOW_LOAD_PATH");
+    bool show_load_path = show_flag == "1";
+    typedef af_err (*func)(int*);
+
+    LibHandle retVal = nullptr;
+
+    if ((retVal = loadLibrary(libpath))) {
+        AF_TRACE("setBackendLib: retVal == {}", retVal);
+        func count_func =
+            (func)getFunctionPointer(retVal, "af_get_device_count");
+        if (count_func) {
+            int count = 0;
+            count_func(&count);
+            AF_TRACE("Device Count: {}.", count);
+            if (count == 0) {
+                retVal = nullptr;
+                UNIFIED_ERROR_LOAD_LIB();
+            }
+        }
+
+        if (show_load_path) { printf("Using %s\n", bkndLibName.c_str()); }
+
+        activeHandle = retVal;
+        activeBackend = bknd;
+        return AF_SUCCESS;
+    }
+    else {
         UNIFIED_ERROR_LOAD_LIB();
     }
 }

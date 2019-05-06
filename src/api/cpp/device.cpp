@@ -17,6 +17,7 @@
 
 namespace af {
 void setBackend(const Backend bknd) { AF_THROW(af_set_backend(bknd)); }
+void setBackendLib(const Backend bknd, const char *libpath) { AF_THROW(af_set_backend_lib(bknd, libpath)); }
 
 unsigned getBackendCount() {
     unsigned temp = 1;

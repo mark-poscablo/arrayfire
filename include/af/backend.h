@@ -24,6 +24,10 @@ extern "C" {
 AFAPI af_err af_set_backend(const af_backend bknd);
 #endif
 
+#if AF_API_VERSION >= 36
+AFAPI af_err af_set_backend_lib(const af_backend bknd, const char *libpath);
+#endif
+
 #if AF_API_VERSION >= 32
 /**
    \param[out] num_backends Number of available backends
@@ -107,6 +111,15 @@ class array;
    \ingroup unified_func_setbackend
  */
 AFAPI void setBackend(const Backend bknd);
+#endif
+
+#if AF_API_VERSION >= 36
+/**
+   \param[in] bknd takes one of the values of enum \ref af_backend
+
+   \ingroup unified_func_setbackend
+*/
+AFAPI void setBackendLib(af::Backend bknd, const char *libpath);
 #endif
 
 #if AF_API_VERSION >= 32

@@ -22,7 +22,12 @@ void* getFunctionPointer(LibHandle handle, const char* symbolName) {
 }
 
 LibHandle loadLibrary(const char* library_name) {
-    return dlopen(library_name, RTLD_LAZY);
+    printf("loadLibrary: %s\n", library_name);
+    LibHandle handle = dlopen(library_name, RTLD_LAZY);
+    if (!handle) {
+        fprintf(stderr, "dlopen failed: %s\n", dlerror());
+    }
+    return handle;
 }
 void unloadLibrary(LibHandle handle) { dlclose(handle); }
 

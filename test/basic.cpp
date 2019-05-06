@@ -508,3 +508,8 @@ TEST(Assert, TestVecArrayNearExceedThresh) {
     ASSERT_FALSE(assertArrayNear("gold", "goldDims", "out", "maxAbsDiff", gold,
                                  goldDims, out, maxDiff));
 }
+
+TEST(Basic, MarkTest) {
+    af::info();
+    af::array a = af::randu(3, 2);
+}
