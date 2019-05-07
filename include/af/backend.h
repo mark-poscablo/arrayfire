@@ -25,7 +25,11 @@ AFAPI af_err af_set_backend(const af_backend bknd);
 #endif
 
 #if AF_API_VERSION >= 36
-AFAPI af_err af_set_backend_lib(const af_backend bknd, const char *libpath);
+    AFAPI af_err af_set_backend_library_path(int lib_idx, const af_backend bknd, const char *lib_path);
+#endif
+
+#if AF_API_VERSION >= 36
+    AFAPI af_err af_set_backend_library(int lib_idx);
 #endif
 
 #if AF_API_VERSION >= 32
@@ -119,7 +123,16 @@ AFAPI void setBackend(const Backend bknd);
 
    \ingroup unified_func_setbackend
 */
-AFAPI void setBackendLib(af::Backend bknd, const char *libpath);
+AFAPI void setBackendLibraryPath(int lib_idx, const Backend bknd, const char *lib_path);
+#endif
+
+#if AF_API_VERSION >= 36
+/**
+   \param[in] bknd takes one of the values of enum \ref af_backend
+
+   \ingroup unified_func_setbackend
+*/
+AFAPI void setBackendLibrary(int lib_idx);
 #endif
 
 #if AF_API_VERSION >= 32

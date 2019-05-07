@@ -30,9 +30,18 @@ af_err af_set_backend(const af_backend bknd) {
     return AF_SUCCESS;
 }
 
-af_err af_set_backend_lib(const af_backend bknd, const char *libpath) {
+af_err af_set_backend_library_path(int lib_idx, const af_backend bknd, const char *lib_path) {
     try {
         ARG_ASSERT(0, bknd == getBackend());
+    }
+    CATCHALL;
+
+    return AF_SUCCESS;
+}
+
+af_err af_set_backend_library(int lib_idx) {
+    try {
+        // what to do here? not supposed to be called outside of the unified backend
     }
     CATCHALL;
 

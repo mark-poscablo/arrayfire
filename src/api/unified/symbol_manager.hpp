@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace unified {
 
@@ -51,7 +52,8 @@ class AFSymbolManager {
     int getAvailableBackends();
 
     af_err setBackend(af::Backend bknd);
-    af_err setBackendLib(af::Backend bknd, const char *libpath);
+    af_err setBackendLibraryPath(int lib_idx, af::Backend bknd, const char *lib_path);
+    af_err setBackendLibrary(int lib_idx);
 
     af::Backend getActiveBackend() { return activeBackend; }
 
@@ -95,8 +97,13 @@ class AFSymbolManager {
     void operator=(AFSymbolManager const&);
 
    private:
-    LibHandle bkndHandles[NUM_BACKENDS];
+    struct CustomBkndHandle {
+        af::Backend bknd;
+        LibHandle handle;
+    };
 
+    LibHandle bkndHandles[NUM_BACKENDS];
+    std::unordered_map<int, CustomBkndHandle> customBkndHandles;
     LibHandle activeHandle;
     LibHandle prevHandle;
     LibHandle defaultHandle;

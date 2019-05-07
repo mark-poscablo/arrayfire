@@ -88,3 +88,64 @@ void backendTest() {
 }
 
 TEST(BACKEND_TEST, Basic) { backendTest(); }
+
+TEST(CustomLibPath, Basic) {
+    int backends = getAvailableBackends();
+
+    ASSERT_NE(backends, 0);
+
+    bool cpu    = backends & AF_BACKEND_CPU;
+    bool cuda   = backends & AF_BACKEND_CUDA;
+    bool opencl = backends & AF_BACKEND_OPENCL;
+
+    printf("\nRunning Default Backend...\n");
+    testFunction<float>();
+
+    if (cpu) {
+        printf("\nRunning CPU Backend...\n");
+        af::setBackendLibraryPath(0, AF_BACKEND_CPU,
+                                  BUILD_DIR "/src/backend/cpu/libafcpu.so");
+        af::setBackendLibrary(0);
+        testFunction<float>();
+    }
+
+    if (cuda) {
+        printf("\nRunning CUDA Backend...\n");
+        af::setBackendLibraryPath(1, AF_BACKEND_CUDA,
+                                  BUILD_DIR "/src/backend/cuda/libafcuda.so");
+        af::setBackendLibrary(1);
+        testFunction<float>();
+    }
+
+    if (opencl) {
+        printf("\nRunning OpenCL Backend...\n");
+        af::setBackendLibraryPath(2, AF_BACKEND_OPENCL,
+                                  BUILD_DIR "/src/backend/opencl/libafopencl.so");
+        af::setBackendLibrary(2);
+        testFunction<float>();
+    }
+}
+
+TEST(CustomLibPath, InvalidLibIdx) {
+    ASSERT_THROW(af::setBackendLibrary(999), af::exception);
+}
+
+TEST(CustomLibPath, InvalidLibPath) {
+    ASSERT_THROW(af::setBackendLibraryPath(0, AF_BACKEND_CPU, "qwerty.so"), af::exception);
+}
+
+// TEST(CustomLibPath, DiffVersions) {
+//     af::setBackend(AF_BACKEND_OPENCL);
+//     testFunction<float>();
+
+//     af::setBackendLibraryPath(0, AF_BACKEND_OPENCL,
+//                               "/home/mark/Documents/arrayfire-3.6.3/build/src/backend/opencl/libafopencl.so.3");
+//     af::setBackendLibraryPath(1, AF_BACKEND_OPENCL,
+//                               "/home/mark/Documents/arrayfire-3.6.4/build/src/backend/opencl/libafopencl.so.3");
+
+//     af::setBackendLibrary(0);
+//     testFunction<float>();
+
+//     af::setBackendLibrary(1);
+//     testFunction<float>();
+// }

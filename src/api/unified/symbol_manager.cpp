@@ -215,6 +215,7 @@ int AFSymbolManager::getAvailableBackends() { return backendsAvailable; }
 af_err AFSymbolManager::setBackend(af::Backend bknd) {
     if (bknd == AF_BACKEND_DEFAULT) {
         if (defaultHandle) {
+            prevHandle = activeHandle;
             activeHandle  = defaultHandle;
             activeBackend = defaultBackend;
             return AF_SUCCESS;
@@ -233,13 +234,13 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
     }
 }
 
-af_err AFSymbolManager::setBackendLib(af::Backend bknd, const char *libpath) {
+af_err AFSymbolManager::setBackendLibraryPath(int lib_idx, af::Backend bknd, const char *lib_path) {
     string show_flag    = getEnvVar("AF_SHOW_LOAD_PATH");
     bool show_load_path = show_flag == "1";
 
     typedef af_err (*func)(int*);
     LibHandle retVal = nullptr;
-    if ((retVal = loadLibrary(libpath))) {
+    if ((retVal = loadLibrary(lib_path))) {
         func count_func =
             (func)getFunctionPointer(retVal, "af_get_device_count");
         if (count_func) {
@@ -252,14 +253,27 @@ af_err AFSymbolManager::setBackendLib(af::Backend bknd, const char *libpath) {
             }
         }
 
-        if (show_load_path) { printf("Using %s\n", libpath); }
+        if (show_load_path) { printf("Using %s\n", lib_path); }
 
-        prevHandle = activeHandle;
-        activeHandle = retVal;
-        activeBackend = bknd;
+        customBkndHandles[lib_idx] = {bknd, retVal};
+        // prevHandle = activeHandle;
+        // activeHandle = retVal;
+        // activeBackend = bknd;
         return AF_SUCCESS;
     }
     else {
+        UNIFIED_ERROR_LOAD_LIB();
+    }
+}
+
+af_err AFSymbolManager::setBackendLibrary(int lib_idx) {
+    if (customBkndHandles.find(lib_idx) != customBkndHandles.end() &&
+        customBkndHandles[lib_idx].handle) {
+        prevHandle = activeHandle;
+        activeHandle  = customBkndHandles[lib_idx].handle;
+        activeBackend = customBkndHandles[lib_idx].bknd;
+        return AF_SUCCESS;
+    } else {
         UNIFIED_ERROR_LOAD_LIB();
     }
 }

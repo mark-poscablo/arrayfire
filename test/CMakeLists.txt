@@ -5,6 +5,10 @@
 # The complete license agreement can be obtained at:
 # http://arrayfire.com/licenses/BSD-3-Clause
 
+
+set(BUILD_DIR "${CMAKE_BINARY_DIR}")
+add_definitions("-DBUILD_DIR=\"${BUILD_DIR}\"")
+
 set(AF_TEST_WITH_MTX_FILES
     ON CACHE BOOL
     "Download and run tests on large matrices form sparse.tamu.edu")
@@ -229,7 +233,6 @@ make_test(SRC main.cpp)
 make_test(SRC match_template.cpp)
 make_test(SRC math.cpp)
 make_test(SRC matrix_manipulation.cpp)
-make_test(SRC marktest.cpp CXX11 BACKENDS "unified")
 make_test(SRC mean.cpp)
 make_test(SRC meanshift.cpp)
 make_test(SRC meanvar.cpp CXX11)
