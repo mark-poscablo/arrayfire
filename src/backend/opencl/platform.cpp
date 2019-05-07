@@ -117,7 +117,7 @@ string getDeviceInfo() {
     }
 
     ostringstream info;
-    info << "MEOW ArrayFire v" << AF_VERSION << " (OpenCL, " << get_system()
+    info << "ArrayFire v" << AF_VERSION << " (OpenCL, " << get_system()
          << ", build " << AF_REVISION << ")\n";
 
     unsigned nDevices = 0;

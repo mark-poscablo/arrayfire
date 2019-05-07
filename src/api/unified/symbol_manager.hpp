@@ -57,7 +57,6 @@ class AFSymbolManager {
 
     template<typename... CalleeArgs>
     af_err call(const char* symbolName, CalleeArgs... args) {
-        // printf("AFSymbolManager call\n");
         typedef af_err (*af_func)(CalleeArgs...);
         if (!activeHandle) { UNIFIED_ERROR_LOAD_LIB(); }
         thread_local std::array<std::unordered_map<const char*, af_func>,
