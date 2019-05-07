@@ -297,6 +297,7 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
     }
     int idx = bknd >> 1;  // Convert 1, 2, 4 -> 0, 1, 2
     if (bkndHandles[idx]) {
+        prevHandle = activeHandle;
         activeHandle  = bkndHandles[idx];
         activeBackend = bknd;
         return AF_SUCCESS;
@@ -306,6 +307,7 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
 }
 
 af_err AFSymbolManager::setBackendLib(af::Backend bknd, const char *libpath) {
+    AF_TRACE("setBackendLib called");
     string bkndLibName  = getBkndLibName(bknd);
     string show_flag    = getEnvVar("AF_SHOW_LOAD_PATH");
     bool show_load_path = show_flag == "1";
@@ -329,6 +331,7 @@ af_err AFSymbolManager::setBackendLib(af::Backend bknd, const char *libpath) {
 
         if (show_load_path) { printf("Using %s\n", bkndLibName.c_str()); }
 
+        prevHandle = activeHandle;
         activeHandle = retVal;
         activeBackend = bknd;
         return AF_SUCCESS;

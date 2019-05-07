@@ -30,6 +30,15 @@ af_err af_set_backend(const af_backend bknd) {
     return AF_SUCCESS;
 }
 
+af_err af_set_backend_lib(const af_backend bknd, const char *libpath) {
+    try {
+        ARG_ASSERT(0, bknd == getBackend());
+    }
+    CATCHALL;
+
+    return AF_SUCCESS;
+}
+
 af_err af_get_backend_count(unsigned* num_backends) {
     *num_backends = 1;
     return AF_SUCCESS;

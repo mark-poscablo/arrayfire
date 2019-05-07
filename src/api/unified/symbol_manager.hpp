@@ -57,7 +57,7 @@ class AFSymbolManager {
 
     template<typename... CalleeArgs>
     af_err call(const char* symbolName, CalleeArgs... args) {
-        printf("AFSymbolManager call\n");
+        // printf("AFSymbolManager call\n");
         typedef af_err (*af_func)(CalleeArgs...);
         if (!activeHandle) { UNIFIED_ERROR_LOAD_LIB(); }
         thread_local std::array<std::unordered_map<const char*, af_func>,
@@ -67,7 +67,7 @@ class AFSymbolManager {
         int index           = backend_index(getActiveBackend());
         af_func& funcHandle = funcHandles[index][symbolName];
 
-        if (!funcHandle) {
+        if (!funcHandle || activeHandle != prevHandle) {
             AF_TRACE("Loading: {}", symbolName);
             funcHandle =
                 (af_func)common::getFunctionPointer(activeHandle, symbolName);
@@ -99,6 +99,7 @@ class AFSymbolManager {
     LibHandle bkndHandles[NUM_BACKENDS];
 
     LibHandle activeHandle;
+    LibHandle prevHandle;
     LibHandle defaultHandle;
     unsigned numBackends;
     int backendsAvailable;

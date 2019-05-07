@@ -54,7 +54,7 @@ string getDeviceInfo() {
 
     ostringstream info;
 
-    info << "ArrayFire v" << AF_VERSION << " (CPU, " << get_system()
+    info << "MEOW ArrayFire v" << AF_VERSION << " (CPU, " << get_system()
          << ", build " << AF_REVISION << ")" << endl;
 
     string model = cinfo.model();

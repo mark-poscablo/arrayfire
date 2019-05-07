@@ -46,7 +46,9 @@ af_err af_get_active_backend(af_backend *result) {
     return AF_SUCCESS;
 }
 
-af_err af_info() { return CALL_NO_PARAMS(); }
+af_err af_info() {
+    return CALL_NO_PARAMS();
+}
 
 af_err af_init() { return CALL_NO_PARAMS(); }
 
