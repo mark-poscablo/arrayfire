@@ -18,9 +18,15 @@
 
 #include <af/device.h>
 
+using af::array;
 using af::dtype_traits;
+using af::exception;
 using af::getAvailableBackends;
+using af::randu;
 using af::setBackend;
+using af::setBackendLibrary;
+using af::setBackendLibraryPath;
+using af::transpose;
 using std::string;
 using std::vector;
 
@@ -89,6 +95,19 @@ void backendTest() {
 
 TEST(BACKEND_TEST, Basic) { backendTest(); }
 
+TEST(BACKEND_TEST, UseArrayAfterSwitchingBackends) {
+    setBackend(AF_BACKEND_OPENCL);
+    array a = randu(3, 2);
+    array at = transpose(a);
+
+    setBackend(AF_BACKEND_CPU);
+    array b = randu(3, 2);
+
+    setBackend(AF_BACKEND_OPENCL);
+    array att = transpose(at);
+    ASSERT_ARRAYS_EQ(a, att);
+}
+
 TEST(CustomLibPath, Basic) {
     int backends = getAvailableBackends();
 
@@ -103,49 +122,68 @@ TEST(CustomLibPath, Basic) {
 
     if (cpu) {
         printf("\nRunning CPU Backend...\n");
-        af::setBackendLibraryPath(0, AF_BACKEND_CPU,
-                                  BUILD_DIR "/src/backend/cpu/libafcpu.so");
-        af::setBackendLibrary(0);
+        setBackendLibraryPath(0, AF_BACKEND_CPU,
+                              BUILD_DIR "/src/backend/cpu/libafcpu.so");
+        setBackendLibrary(0);
         testFunction<float>();
     }
 
     if (cuda) {
         printf("\nRunning CUDA Backend...\n");
-        af::setBackendLibraryPath(1, AF_BACKEND_CUDA,
-                                  BUILD_DIR "/src/backend/cuda/libafcuda.so");
-        af::setBackendLibrary(1);
+        setBackendLibraryPath(1, AF_BACKEND_CUDA,
+                              BUILD_DIR "/src/backend/cuda/libafcuda.so");
+        setBackendLibrary(1);
         testFunction<float>();
     }
 
     if (opencl) {
         printf("\nRunning OpenCL Backend...\n");
-        af::setBackendLibraryPath(2, AF_BACKEND_OPENCL,
-                                  BUILD_DIR "/src/backend/opencl/libafopencl.so");
-        af::setBackendLibrary(2);
+        setBackendLibraryPath(2, AF_BACKEND_OPENCL,
+                              BUILD_DIR "/src/backend/opencl/libafopencl.so");
+        setBackendLibrary(2);
         testFunction<float>();
     }
 }
 
 TEST(CustomLibPath, InvalidLibIdx) {
-    ASSERT_THROW(af::setBackendLibrary(999), af::exception);
+    ASSERT_THROW(setBackendLibrary(999), exception);
 }
 
 TEST(CustomLibPath, InvalidLibPath) {
-    ASSERT_THROW(af::setBackendLibraryPath(0, AF_BACKEND_CPU, "qwerty.so"), af::exception);
+    ASSERT_THROW(setBackendLibraryPath(0, AF_BACKEND_CPU, "qwerty.so"), exception);
 }
 
-// TEST(CustomLibPath, DiffVersions) {
-//     af::setBackend(AF_BACKEND_OPENCL);
-//     testFunction<float>();
+TEST(CustomLibPath, DiffVersions) {
+    setBackend(AF_BACKEND_CUDA);
+    testFunction<float>();
 
-//     af::setBackendLibraryPath(0, AF_BACKEND_OPENCL,
-//                               "/home/mark/Documents/arrayfire-3.6.3/build/src/backend/opencl/libafopencl.so.3");
-//     af::setBackendLibraryPath(1, AF_BACKEND_OPENCL,
-//                               "/home/mark/Documents/arrayfire-3.6.4/build/src/backend/opencl/libafopencl.so.3");
+    setBackendLibraryPath(0, AF_BACKEND_CUDA,
+                          "/home/mark/Documents/arrayfire-3.6.3/build/src/backend/cuda/libafcuda.so.3");
+    setBackendLibraryPath(1, AF_BACKEND_CUDA,
+                          "/home/mark/Documents/arrayfire-3.6.4/build/src/backend/cuda/libafcuda.so.3");
 
-//     af::setBackendLibrary(0);
-//     testFunction<float>();
+    setBackendLibrary(0);
+    testFunction<float>();
 
-//     af::setBackendLibrary(1);
-//     testFunction<float>();
-// }
+    setBackendLibrary(1);
+    testFunction<float>();
+}
+
+TEST(CustomLibPath, UseArrayAfterSwitchingLibraries) {
+    // setBackend(AF_BACKEND_CUDA);
+    setBackendLibraryPath(0, AF_BACKEND_CUDA,
+                          BUILD_DIR "/src/backend/cuda/libafcuda.so");
+    setBackendLibraryPath(1, AF_BACKEND_CPU,
+                          "/home/mark/Documents/arrayfire-3.6.4/build/src/backend/cpu/libafcpu.so.3");
+
+    setBackendLibrary(0);
+    array a = randu(3, 2);
+    array at = transpose(a);
+
+    setBackendLibrary(1);
+    array b = randu(3, 2);
+
+    setBackendLibrary(0);
+    array att = transpose(at);
+    ASSERT_ARRAYS_EQ(a, att);
+}
