@@ -234,7 +234,7 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
     }
 }
 
-af_err AFSymbolManager::setBackendLibraryPath(int lib_idx, af::Backend bknd, const char *lib_path) {
+af_err AFSymbolManager::setBackendLibraryPath(int lib_idx, const char *lib_path) {
     string show_flag    = getEnvVar("AF_SHOW_LOAD_PATH");
     bool show_load_path = show_flag == "1";
 
@@ -255,7 +255,7 @@ af_err AFSymbolManager::setBackendLibraryPath(int lib_idx, af::Backend bknd, con
 
         if (show_load_path) { printf("Using %s\n", lib_path); }
 
-        customBkndHandles[lib_idx] = {bknd, retVal};
+        customBkndHandles[lib_idx] = retVal;
         // prevHandle = activeHandle;
         // activeHandle = retVal;
         // activeBackend = bknd;
@@ -267,11 +267,18 @@ af_err AFSymbolManager::setBackendLibraryPath(int lib_idx, af::Backend bknd, con
 }
 
 af_err AFSymbolManager::setBackendLibrary(int lib_idx) {
+    typedef af_err (*func)(af_backend*);
     if (customBkndHandles.find(lib_idx) != customBkndHandles.end() &&
-        customBkndHandles[lib_idx].handle) {
+        customBkndHandles[lib_idx]) {
         prevHandle = activeHandle;
-        activeHandle  = customBkndHandles[lib_idx].handle;
-        activeBackend = customBkndHandles[lib_idx].bknd;
+        activeHandle  = customBkndHandles[lib_idx];
+        af_backend bknd = (af_backend)0;
+        func get_backend_func =
+            (func)getFunctionPointer(activeHandle, "af_get_active_backend");
+        if (get_backend_func) {
+            get_backend_func(&bknd);
+        }
+        activeBackend = bknd;
         return AF_SUCCESS;
     } else {
         UNIFIED_ERROR_LOAD_LIB();

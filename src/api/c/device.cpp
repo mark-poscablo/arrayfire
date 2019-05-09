@@ -30,7 +30,7 @@ af_err af_set_backend(const af_backend bknd) {
     return AF_SUCCESS;
 }
 
-af_err af_set_backend_library_path(int lib_idx, const af_backend bknd, const char *lib_path) {
+af_err af_set_backend_library_path(int lib_idx, const char *lib_path) {
     try {
         ARG_ASSERT(0, bknd == getBackend());
     }

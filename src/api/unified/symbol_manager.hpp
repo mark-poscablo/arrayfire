@@ -52,7 +52,7 @@ class AFSymbolManager {
     int getAvailableBackends();
 
     af_err setBackend(af::Backend bknd);
-    af_err setBackendLibraryPath(int lib_idx, af::Backend bknd, const char *lib_path);
+    af_err setBackendLibraryPath(int lib_idx, const char *lib_path);
     af_err setBackendLibrary(int lib_idx);
 
     af::Backend getActiveBackend() { return activeBackend; }
@@ -97,13 +97,8 @@ class AFSymbolManager {
     void operator=(AFSymbolManager const&);
 
    private:
-    struct CustomBkndHandle {
-        af::Backend bknd;
-        LibHandle handle;
-    };
-
     LibHandle bkndHandles[NUM_BACKENDS];
-    std::unordered_map<int, CustomBkndHandle> customBkndHandles;
+    std::unordered_map<int, LibHandle> customBkndHandles;
     LibHandle activeHandle;
     LibHandle prevHandle;
     LibHandle defaultHandle;

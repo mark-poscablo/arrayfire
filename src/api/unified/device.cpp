@@ -16,8 +16,8 @@ af_err af_set_backend(const af_backend bknd) {
     return unified::AFSymbolManager::getInstance().setBackend(bknd);
 }
 
-af_err af_set_backend_library_path(int lib_idx, const af_backend bknd, const char *lib_path) {
-    return unified::AFSymbolManager::getInstance().setBackendLibraryPath(lib_idx, bknd, lib_path);
+af_err af_set_backend_library_path(int lib_idx, const char *lib_path) {
+    return unified::AFSymbolManager::getInstance().setBackendLibraryPath(lib_idx, lib_path);
 }
 
 af_err af_set_backend_library(int lib_idx) {
