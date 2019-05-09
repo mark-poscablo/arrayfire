@@ -17,8 +17,8 @@
 
 namespace af {
 void setBackend(const Backend bknd) { AF_THROW(af_set_backend(bknd)); }
-void setBackendLibraryPath(int lib_idx, const char *lib_path) {
-    AF_THROW(af_set_backend_library_path(lib_idx, lib_path));
+void addBackendLibrary(const char *lib_path) {
+    AF_THROW(af_add_backend_library(lib_path));
 }
 void setBackendLibrary(int lib_idx) {
     AF_THROW(af_set_backend_library(lib_idx));

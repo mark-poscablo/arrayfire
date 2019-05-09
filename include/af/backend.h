@@ -25,7 +25,7 @@ AFAPI af_err af_set_backend(const af_backend bknd);
 #endif
 
 #if AF_API_VERSION >= 36
-    AFAPI af_err af_set_backend_library_path(int lib_idx, const char *lib_path);
+    AFAPI af_err af_add_backend_library(const char *lib_path);
 #endif
 
 #if AF_API_VERSION >= 36
@@ -123,7 +123,7 @@ AFAPI void setBackend(const Backend bknd);
 
    \ingroup unified_func_setbackend
 */
-AFAPI void setBackendLibraryPath(int lib_idx, const char *lib_path);
+AFAPI void addBackendLibrary(const char *lib_path);
 #endif
 
 #if AF_API_VERSION >= 36

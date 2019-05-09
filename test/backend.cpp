@@ -25,7 +25,7 @@ using af::getAvailableBackends;
 using af::randu;
 using af::setBackend;
 using af::setBackendLibrary;
-using af::setBackendLibraryPath;
+using af::addBackendLibrary;
 using af::transpose;
 using std::string;
 using std::vector;
@@ -122,21 +122,21 @@ TEST(CustomLibPath, Basic) {
 
     if (cpu) {
         printf("\nRunning CPU Backend...\n");
-        setBackendLibraryPath(0, BUILD_DIR "/src/backend/cpu/libafcpu.so");
+        addBackendLibrary(BUILD_DIR "/src/backend/cpu/libafcpu.so");
         setBackendLibrary(0);
         testFunction<float>();
     }
 
     if (cuda) {
         printf("\nRunning CUDA Backend...\n");
-        setBackendLibraryPath(1, BUILD_DIR "/src/backend/cuda/libafcuda.so");
+        addBackendLibrary(BUILD_DIR "/src/backend/cuda/libafcuda.so");
         setBackendLibrary(1);
         testFunction<float>();
     }
 
     if (opencl) {
         printf("\nRunning OpenCL Backend...\n");
-        setBackendLibraryPath(2, BUILD_DIR "/src/backend/opencl/libafopencl.so");
+        addBackendLibrary(BUILD_DIR "/src/backend/opencl/libafopencl.so");
         setBackendLibrary(2);
         testFunction<float>();
     }
@@ -147,15 +147,15 @@ TEST(CustomLibPath, InvalidLibIdx) {
 }
 
 TEST(CustomLibPath, InvalidLibPath) {
-    ASSERT_THROW(setBackendLibraryPath(0, "qwerty.so"), exception);
+    ASSERT_THROW(addBackendLibrary("qwerty.so"), exception);
 }
 
 TEST(CustomLibPath, DiffVersions) {
     setBackend(AF_BACKEND_CUDA);
     testFunction<float>();
 
-    setBackendLibraryPath(0, "/home/mark/Documents/arrayfire-3.6.3/build/src/backend/cuda/libafcuda.so.3");
-    setBackendLibraryPath(1, "/home/mark/Documents/arrayfire-3.6.4/build/src/backend/cuda/libafcuda.so.3");
+    addBackendLibrary("/home/mark/Documents/arrayfire-3.6.3/build/src/backend/cuda/libafcuda.so.3");
+    addBackendLibrary("/home/mark/Documents/arrayfire-3.6.4/build/src/backend/cuda/libafcuda.so.3");
 
     setBackendLibrary(0);
     testFunction<float>();
@@ -165,8 +165,8 @@ TEST(CustomLibPath, DiffVersions) {
 }
 
 TEST(CustomLibPath, UseArrayAfterSwitchingLibraries) {
-    setBackendLibraryPath(0, BUILD_DIR "/src/backend/cuda/libafcuda.so");
-    setBackendLibraryPath(1, "/home/mark/Documents/arrayfire-3.6.4/build/src/backend/cpu/libafcpu.so.3");
+    addBackendLibrary(BUILD_DIR "/src/backend/cuda/libafcuda.so");
+    addBackendLibrary("/home/mark/Documents/arrayfire-3.6.4/build/src/backend/cpu/libafcpu.so.3");
 
     setBackendLibrary(0);
     array a = randu(3, 2);

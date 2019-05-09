@@ -204,7 +204,8 @@ AFSymbolManager::AFSymbolManager()
 }
 
 AFSymbolManager::~AFSymbolManager() {
-    for (int i = 0; i < NUM_BACKENDS; ++i) {
+    // for (int i = 0; i < NUM_BACKENDS; ++i) {
+    for (int i = 0; i < bkndHandles.size(); ++i) {
         if (bkndHandles[i]) { closeDynLibrary(bkndHandles[i]); }
     }
 }
@@ -235,30 +236,31 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
     }
 }
 
-af_err AFSymbolManager::setBackendLibraryPath(int lib_idx, const char *lib_path) {
+af_err AFSymbolManager::addBackendLibrary(const char *lib_path) {
     string show_flag    = getEnvVar("AF_SHOW_LOAD_PATH");
     bool show_load_path = show_flag == "1";
 
     typedef af_err (*func)(int*);
-    LibHandle retVal = nullptr;
-    if ((retVal = loadLibrary(lib_path))) {
+    LibHandle handle = nullptr;
+    if ((handle = loadLibrary(lib_path))) {
         func count_func =
-            (func)getFunctionPointer(retVal, "af_get_device_count");
+            (func)getFunctionPointer(handle, "af_get_device_count");
         if (count_func) {
             int count = 0;
             count_func(&count);
             AF_TRACE("Device Count: {}.", count);
             if (count == 0) {
-                retVal = nullptr;
+                handle = nullptr;
                 UNIFIED_ERROR_LOAD_LIB();
             }
         }
 
         if (show_load_path) { printf("Using %s\n", lib_path); }
 
-        customBkndHandles[lib_idx] = retVal;
+        bkndHandles.push_back(handle);
+        // customBkndHandles[lib_idx] = handle;
         // prevHandle = activeHandle;
-        // activeHandle = retVal;
+        // activeHandle = handle;
         // activeBackend = bknd;
         return AF_SUCCESS;
     }
@@ -269,10 +271,12 @@ af_err AFSymbolManager::setBackendLibraryPath(int lib_idx, const char *lib_path)
 
 af_err AFSymbolManager::setBackendLibrary(int lib_idx) {
     typedef af_err (*func)(af_backend*);
-    if (customBkndHandles.find(lib_idx) != customBkndHandles.end() &&
-        customBkndHandles[lib_idx]) {
+    // if (customBkndHandles.find(lib_idx) != customBkndHandles.end() &&
+    //     customBkndHandles[lib_idx]) {
+    int actual_idx = lib_idx + NUM_BACKENDS;
+    if (bkndHandles[actual_idx]) {
         prevHandle = activeHandle;
-        activeHandle  = customBkndHandles[lib_idx];
+        activeHandle  = bkndHandles[actual_idx];
         af_backend bknd = (af_backend)0;
         func get_backend_func =
             (func)getFunctionPointer(activeHandle, "af_get_active_backend");
