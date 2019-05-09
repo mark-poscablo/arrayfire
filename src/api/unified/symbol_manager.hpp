@@ -97,7 +97,8 @@ class AFSymbolManager {
     void operator=(AFSymbolManager const&);
 
    private:
-    LibHandle bkndHandles[NUM_BACKENDS];
+    // LibHandle bkndHandles[NUM_BACKENDS];
+    std::vector<LibHandle> bkndHandles;
     std::unordered_map<int, LibHandle> customBkndHandles;
     LibHandle activeHandle;
     LibHandle prevHandle;

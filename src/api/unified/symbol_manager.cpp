@@ -173,6 +173,7 @@ AFSymbolManager::AFSymbolManager()
     : activeHandle(nullptr)
     , defaultHandle(nullptr)
     , numBackends(0)
+    , bkndHandles(NUM_BACKENDS, 0)
     , backendsAvailable(0)
     , logger(loggerFactory("unified")) {
     // In order of priority.
