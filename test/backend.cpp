@@ -142,7 +142,11 @@ TEST(CustomLibPath, Basic) {
     }
 }
 
-TEST(CustomLibPath, InvalidLibIdx) {
+TEST(CustomLibPath, LibIdxPointsToNullHandle) {
+    ASSERT_THROW(setBackendLibrary(5), exception);
+}
+
+TEST(CustomLibPath, LibIdxExceedsMaxHandles) {
     ASSERT_THROW(setBackendLibrary(999), exception);
 }
 

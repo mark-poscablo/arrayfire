@@ -19,11 +19,11 @@
 #include <cstdlib>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace unified {
 
 const int NUM_BACKENDS = 3;
+const int MAX_BKND_HANDLES = 10;
 
 #define UNIFIED_ERROR_LOAD_LIB()                                       \
     AF_RETURN_ERROR(                                                   \
@@ -68,7 +68,9 @@ class AFSymbolManager {
         int index           = backend_index(getActiveBackend());
         af_func& funcHandle = funcHandles[index][symbolName];
 
-        if (!funcHandle || activeHandle != prevHandle) {
+        if (!funcHandle ||
+            activeHandle != prevHandle) { // Load funcHandle also if backend is
+                                          // the same but library will be changed
             AF_TRACE("Loading: {}", symbolName);
             funcHandle =
                 (af_func)common::getFunctionPointer(activeHandle, symbolName);
@@ -97,13 +99,11 @@ class AFSymbolManager {
     void operator=(AFSymbolManager const&);
 
    private:
-    // LibHandle bkndHandles[NUM_BACKENDS];
-    std::vector<LibHandle> bkndHandles;
-    // std::unordered_map<int, LibHandle> customBkndHandles;
+    LibHandle bkndHandles[MAX_BKND_HANDLES];
     LibHandle activeHandle;
     LibHandle prevHandle;
     LibHandle defaultHandle;
-    unsigned numBackends;
+    unsigned numBackendHandles;
     int backendsAvailable;
     af_backend activeBackend;
     af_backend defaultBackend;
