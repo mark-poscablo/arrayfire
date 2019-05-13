@@ -19,8 +19,10 @@
 #include <af/device.h>
 
 using af::array;
+using af::Backend;
 using af::dtype_traits;
 using af::exception;
+using af::getBackendCount;
 using af::getAvailableBackends;
 using af::randu;
 using af::setBackend;
@@ -159,17 +161,37 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingBackends) {
     EXPECT_EXIT({
             // START of actual test
 
-            setBackend(AF_BACKEND_CUDA);
-            array a = randu(3, 2);
+            int backends = getAvailableBackends();
 
-            array at = transpose(a);
+            ASSERT_NE(backends, 0);
 
-            setBackend(AF_BACKEND_CPU);
-            array b = randu(3, 2);
+            bool cpu    = backends & AF_BACKEND_CPU;
+            bool cuda   = backends & AF_BACKEND_CUDA;
+            bool opencl = backends & AF_BACKEND_OPENCL;
 
-            setBackend(AF_BACKEND_CUDA);
-            array att = transpose(at);
-            ASSERT_ARRAYS_EQ(a, att);
+            int num_backends = getBackendCount();
+            ASSERT_GT(num_backends, 0);
+            if (num_backends > 1) {
+                Backend backend0 = cpu ? AF_BACKEND_CPU : AF_BACKEND_OPENCL;
+                Backend backend1 = cuda ? AF_BACKEND_CUDA : AF_BACKEND_OPENCL;
+                printf("Using %s and %s\n",
+                       getActiveBackendString(backend0),
+                       getActiveBackendString(backend1));
+
+                setBackend(backend0);
+                array a = randu(3, 2);
+                array at = transpose(a);
+
+                setBackend(backend1);
+                array b = randu(3, 2);
+
+                setBackend(backend0);
+                array att = transpose(at);
+                ASSERT_ARRAYS_EQ(a, att);
+            }
+            else {
+                printf("Only 1 backend available, skipping test\n");
+            }
 
             // END of actual test
 
@@ -188,19 +210,43 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingLibraries) {
     EXPECT_EXIT({
             // START of actual test
 
-            addBackendLibrary(BUILD_DIR "/src/backend/cpu/libafcpu.so");
-            addBackendLibrary(BUILD_DIR "/src/backend/cuda/libafcuda.so");
+            int backends = getAvailableBackends();
 
-            setBackendLibrary(0);
-            array a = randu(3, 2);
-            array at = transpose(a);
+            ASSERT_NE(backends, 0);
 
-            setBackendLibrary(1);
-            array b = randu(3, 2);
+            bool cpu    = backends & AF_BACKEND_CPU;
+            bool cuda   = backends & AF_BACKEND_CUDA;
+            bool opencl = backends & AF_BACKEND_OPENCL;
 
-            setBackendLibrary(0);
-            array att = transpose(at);
-            ASSERT_ARRAYS_EQ(a, att);
+            string cpu_path    = BUILD_DIR "/src/backend/cpu/libafcpu.so";
+            string cuda_path   = BUILD_DIR "/src/backend/cuda/libafcuda.so";
+            string opencl_path = BUILD_DIR "/src/backend/opencl/libafopencl.so";
+
+            int num_backends = getBackendCount();
+            ASSERT_GT(num_backends, 0);
+            if (num_backends > 1) {
+                string lib_path0 = cpu ? cpu_path : opencl_path;
+                string lib_path1 = cuda ? cuda_path : opencl_path;
+                printf("Using %s and %s\n",
+                       lib_path0.c_str(), lib_path1.c_str());
+
+                addBackendLibrary(lib_path0.c_str());
+                addBackendLibrary(lib_path1.c_str());
+
+                setBackendLibrary(0);
+                array a = randu(3, 2);
+                array at = transpose(a);
+
+                setBackendLibrary(1);
+                array b = randu(3, 2);
+
+                setBackendLibrary(0);
+                array att = transpose(at);
+                ASSERT_ARRAYS_EQ(a, att);
+            }
+            else {
+                printf("Only 1 backend available, skipping test\n");
+            }
 
             // END of actual test
 
