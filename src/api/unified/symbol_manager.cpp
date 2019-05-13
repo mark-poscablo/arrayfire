@@ -259,7 +259,7 @@ af_err AFSymbolManager::addBackendLibrary(const char *lib_path) {
             AF_TRACE("Device Count: {}.", count);
             if (count == 0) {
                 // No available device for this backend
-                // Or maybe invalid library too?
+                // Or loaded library is invalid (since function can't be found)
                 handle = nullptr;
                 UNIFIED_ERROR_LOAD_LIB();
             }
@@ -273,6 +273,7 @@ af_err AFSymbolManager::addBackendLibrary(const char *lib_path) {
         return AF_SUCCESS;
     }
     else {
+        // loadLibrary failed, maybe because path is invalid or another reason
         UNIFIED_ERROR_LOAD_LIB();
     }
 }

@@ -41,8 +41,6 @@ const char *getActiveBackendString(af_backend active) {
 
 template<typename T>
 void testFunction() {
-    af_info();
-
     af_backend activeBackend = (af_backend)0;
     af_get_active_backend(&activeBackend);
 
@@ -62,69 +60,38 @@ void testFunction() {
     if (outArray != 0) { ASSERT_SUCCESS(af_release_array(outArray)); }
 }
 
-void backendTest() {
-    int backends = getAvailableBackends();
-
-    ASSERT_NE(backends, 0);
-
-    bool cpu    = backends & AF_BACKEND_CPU;
-    bool cuda   = backends & AF_BACKEND_CUDA;
-    bool opencl = backends & AF_BACKEND_OPENCL;
-
-    printf("\nRunning Default Backend...\n");
-    testFunction<float>();
-
-    if (cpu) {
-        printf("\nRunning CPU Backend...\n");
-        setBackend(AF_BACKEND_CPU);
-        testFunction<float>();
-    }
-
-    if (cuda) {
-        printf("\nRunning CUDA Backend...\n");
-        setBackend(AF_BACKEND_CUDA);
-        testFunction<float>();
-    }
-
-    if (opencl) {
-        printf("\nRunning OpenCL Backend...\n");
-        setBackend(AF_BACKEND_OPENCL);
-        testFunction<float>();
-    }
-}
-
-TEST(BACKEND_TEST, Basic) {
-    EXPECT_EXIT({
-            // START of actual test
-            backendTest();
-            // END of actual test
-
-            if (HasFailure()) {
-                fprintf(stderr, "Test failed");
-                exit(1);
-            }
-            else {
-                fprintf(stderr, "Test succeeded");
-                exit(0);
-            }
-        }, ::testing::ExitedWithCode(0), "Test succeeded");
-}
-
-TEST(BACKEND_TEST, UseArrayAfterSwitchingBackends) {
+TEST(BACKEND_TEST, DiffBackends) {
     EXPECT_EXIT({
             // START of actual test
 
-            setBackend(AF_BACKEND_CUDA);
-            array a = randu(3, 2);
+            int backends = getAvailableBackends();
 
-            array at = transpose(a);
+            ASSERT_NE(backends, 0);
 
-            setBackend(AF_BACKEND_CPU);
-            array b = randu(3, 2);
+            bool cpu    = backends & AF_BACKEND_CPU;
+            bool cuda   = backends & AF_BACKEND_CUDA;
+            bool opencl = backends & AF_BACKEND_OPENCL;
 
-            setBackend(AF_BACKEND_CUDA);
-            array att = transpose(at);
-            ASSERT_ARRAYS_EQ(a, att);
+            printf("\nRunning Default Backend...\n");
+            testFunction<float>();
+
+            if (cpu) {
+                printf("\nRunning CPU Backend...\n");
+                setBackend(AF_BACKEND_CPU);
+                testFunction<float>();
+            }
+
+            if (cuda) {
+                printf("\nRunning CUDA Backend...\n");
+                setBackend(AF_BACKEND_CUDA);
+                testFunction<float>();
+            }
+
+            if (opencl) {
+                printf("\nRunning OpenCL Backend...\n");
+                setBackend(AF_BACKEND_OPENCL);
+                testFunction<float>();
+            }
 
             // END of actual test
 
@@ -139,7 +106,7 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingBackends) {
         }, ::testing::ExitedWithCode(0), "Test succeeded");
 }
 
-TEST(BACKEND_TEST, CustomLibPathsBasic) {
+TEST(BACKEND_TEST, CustomLibPathsDiffBackends) {
     EXPECT_EXIT({
             // START of actual test
 
@@ -188,10 +155,22 @@ TEST(BACKEND_TEST, CustomLibPathsBasic) {
         }, ::testing::ExitedWithCode(0), "Test succeeded");
 }
 
-TEST(BACKEND_TEST, LibIdxPointsToNullHandle) {
+TEST(BACKEND_TEST, UseArrayAfterSwitchingBackends) {
     EXPECT_EXIT({
             // START of actual test
-            ASSERT_THROW(setBackendLibrary(0), exception);
+
+            setBackend(AF_BACKEND_CUDA);
+            array a = randu(3, 2);
+
+            array at = transpose(a);
+
+            setBackend(AF_BACKEND_CPU);
+            array b = randu(3, 2);
+
+            setBackend(AF_BACKEND_CUDA);
+            array att = transpose(at);
+            ASSERT_ARRAYS_EQ(a, att);
+
             // END of actual test
 
             if (HasFailure()) {
@@ -205,10 +184,24 @@ TEST(BACKEND_TEST, LibIdxPointsToNullHandle) {
         }, ::testing::ExitedWithCode(0), "Test succeeded");
 }
 
-TEST(BACKEND_TEST, LibIdxExceedsMaxHandles) {
+TEST(BACKEND_TEST, UseArrayAfterSwitchingLibraries) {
     EXPECT_EXIT({
             // START of actual test
-            ASSERT_THROW(setBackendLibrary(999), exception);
+
+            addBackendLibrary(BUILD_DIR "/src/backend/cpu/libafcpu.so");
+            addBackendLibrary(BUILD_DIR "/src/backend/cuda/libafcuda.so");
+
+            setBackendLibrary(0);
+            array a = randu(3, 2);
+            array at = transpose(a);
+
+            setBackendLibrary(1);
+            array b = randu(3, 2);
+
+            setBackendLibrary(0);
+            array att = transpose(at);
+            ASSERT_ARRAYS_EQ(a, att);
+
             // END of actual test
 
             if (HasFailure()) {
@@ -239,22 +232,10 @@ TEST(BACKEND_TEST, InvalidLibPath) {
         }, ::testing::ExitedWithCode(0), "Test succeeded");
 }
 
-TEST(BACKEND_TEST, DiffVersions) {
+TEST(BACKEND_TEST, LibIdxPointsToNullHandle) {
     EXPECT_EXIT({
             // START of actual test
-
-            setBackend(AF_BACKEND_CUDA);
-            testFunction<float>();
-
-            addBackendLibrary("/home/mark/Documents/arrayfire-3.6.3/build/src/backend/cuda/libafcuda.so.3");
-            addBackendLibrary("/home/mark/Documents/arrayfire-3.6.4/build/src/backend/cuda/libafcuda.so.3");
-
-            setBackendLibrary(0);
-            testFunction<float>();
-
-            setBackendLibrary(1);
-            testFunction<float>();
-
+            ASSERT_THROW(setBackendLibrary(0), exception);
             // END of actual test
 
             if (HasFailure()) {
@@ -268,24 +249,10 @@ TEST(BACKEND_TEST, DiffVersions) {
         }, ::testing::ExitedWithCode(0), "Test succeeded");
 }
 
-TEST(BACKEND_TEST, UseArrayAfterSwitchingLibraries) {
+TEST(BACKEND_TEST, LibIdxExceedsMaxHandles) {
     EXPECT_EXIT({
             // START of actual test
-
-            addBackendLibrary(BUILD_DIR "/src/backend/cuda/libafcuda.so");
-            addBackendLibrary("/home/mark/Documents/arrayfire-3.6.4/build/src/backend/cpu/libafcpu.so.3");
-
-            setBackendLibrary(0);
-            array a = randu(3, 2);
-            array at = transpose(a);
-
-            setBackendLibrary(1);
-            array b = randu(3, 2);
-
-            setBackendLibrary(0);
-            array att = transpose(at);
-            ASSERT_ARRAYS_EQ(a, att);
-
+            ASSERT_THROW(setBackendLibrary(999), exception);
             // END of actual test
 
             if (HasFailure()) {
