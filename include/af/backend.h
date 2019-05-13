@@ -118,20 +118,10 @@ AFAPI void setBackend(const Backend bknd);
 #endif
 
 #if AF_API_VERSION >= 36
-/**
-   \param[in] bknd takes one of the values of enum \ref af_backend
-
-   \ingroup unified_func_setbackend
-*/
 AFAPI void addBackendLibrary(const char *lib_path);
 #endif
 
 #if AF_API_VERSION >= 36
-/**
-   \param[in] bknd takes one of the values of enum \ref af_backend
-
-   \ingroup unified_func_setbackend
-*/
 AFAPI void setBackendLibrary(int lib_idx);
 #endif
 

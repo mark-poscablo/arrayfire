@@ -32,7 +32,7 @@ af_err af_set_backend(const af_backend bknd) {
 
 af_err af_add_backend_library(const char *lib_path) {
     try {
-        ARG_ASSERT(0, bknd == getBackend());
+        // what to do here? not supposed to be called outside of the unified backend
     }
     CATCHALL;
 
