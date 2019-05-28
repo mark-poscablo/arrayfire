@@ -168,7 +168,8 @@ AFSymbolManager& AFSymbolManager::getInstance() {
 spdlog::logger* AFSymbolManager::getLogger() { return logger.get(); }
 
 AFSymbolManager::AFSymbolManager()
-    : activeHandle(nullptr)
+    : bkndHandles{}
+    , activeHandle(nullptr)
     , defaultHandle(nullptr)
     , numBackends(0)
     , numBackendHandles(NUM_BACKENDS)
@@ -177,11 +178,6 @@ AFSymbolManager::AFSymbolManager()
     // In order of priority.
     static const af_backend order[] = {AF_BACKEND_CUDA, AF_BACKEND_OPENCL,
                                        AF_BACKEND_CPU};
-
-    // Initialize bkndHandles to nullptrs
-    for (int i = 0; i < MAX_BKND_HANDLES; ++i) {
-        bkndHandles[i] = nullptr;
-    }
 
     // Decremeting loop. The last successful backend loaded will be the most
     // prefered one.
