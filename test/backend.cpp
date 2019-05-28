@@ -25,6 +25,7 @@ using af::Backend;
 using af::dtype_traits;
 using af::exception;
 using af::getAvailableBackends;
+using af::getActiveBackend;
 using af::getBackendCount;
 using af::randu;
 using af::setBackend;
@@ -374,6 +375,67 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingLibraries) {
             else {
                 printf("Only 1 backend available, skipping test\n");
             }
+
+            // END of actual test
+
+            if (HasFailure()) {
+                fprintf(stderr, "Test failed");
+                exit(1);
+            }
+            else {
+                fprintf(stderr, "Test succeeded");
+                exit(0);
+            }
+        }, ::testing::ExitedWithCode(0), "Test succeeded");
+}
+
+TEST(BACKEND_TEST, UseArrayAfterSwitchingToSameLibrary) {
+    EXPECT_EXIT({
+            // START of actual test
+
+            int backends = getAvailableBackends();
+
+            EXPECT_NE(backends, 0);
+
+            bool cpu    = backends & AF_BACKEND_CPU;
+            bool cuda   = backends & AF_BACKEND_CUDA;
+            bool opencl = backends & AF_BACKEND_OPENCL;
+
+            string cpu_path    = build_dir_str + library_prefix_cpu + library_suffix;
+            string cuda_path   = build_dir_str + library_prefix_cuda + library_suffix;
+            string opencl_path = build_dir_str + library_prefix_opencl + library_suffix;
+
+            string custom_lib_path;
+            setBackend(AF_BACKEND_DEFAULT);
+            Backend default_backend = getActiveBackend();
+            switch (default_backend) {
+                case AF_BACKEND_CPU:
+                    custom_lib_path = cpu_path;
+                    break;
+                case AF_BACKEND_CUDA:
+                    custom_lib_path = cuda_path;
+                    break;
+                case AF_BACKEND_OPENCL:
+                    custom_lib_path = opencl_path;
+                    break;
+                default:
+                    fprintf(stderr, "Cannot get default backend");
+                    break;
+            }
+            EXPECT_TRUE(default_backend == AF_BACKEND_CPU ||
+                        default_backend == AF_BACKEND_CUDA ||
+                        default_backend == AF_BACKEND_OPENCL);
+
+            af_add_backend_library(custom_lib_path.c_str());
+            af_set_backend_library(0);
+            array a = randu(3, 3);
+            af_print(a);
+
+            af_add_backend_library(custom_lib_path.c_str());
+            af_set_backend_library(1);
+            array aa = a;
+            af_print(aa);
+            ASSERT_ARRAYS_EQ(a, aa);
 
             // END of actual test
 
