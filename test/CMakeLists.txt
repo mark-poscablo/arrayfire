@@ -6,7 +6,7 @@
 # http://arrayfire.com/licenses/BSD-3-Clause
 
 
-set(BUILD_DIR "${CMAKE_BINARY_DIR}")
+set(BUILD_DIR "${ArrayFire_BINARY_DIR}")
 add_definitions("-DBUILD_DIR=\"${BUILD_DIR}\"")
 
 set(AF_TEST_WITH_MTX_FILES
