@@ -170,10 +170,13 @@ spdlog::logger* AFSymbolManager::getLogger() { return logger.get(); }
 AFSymbolManager::AFSymbolManager()
     : bkndHandles{}
     , activeHandle(nullptr)
+    , prevHandle(0)
     , defaultHandle(nullptr)
     , numBackends(0)
     , numBackendHandles(NUM_BACKENDS)
     , backendsAvailable(0)
+    , activeBackend(AF_BACKEND_CPU)
+    , defaultBackend(AF_BACKEND_CPU)
     , logger(loggerFactory("unified")) {
     // In order of priority.
     static const af_backend order[] = {AF_BACKEND_CUDA, AF_BACKEND_OPENCL,
