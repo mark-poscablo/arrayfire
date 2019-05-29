@@ -429,16 +429,18 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingToSameLibrary) {
                         default_backend == AF_BACKEND_CUDA ||
                         default_backend == AF_BACKEND_OPENCL);
 
+            printf("Using %s\n", custom_lib_path.c_str());
+
             af_add_backend_library(custom_lib_path.c_str());
             af_set_backend_library(0);
             array a = randu(3, 3);
-            af_print(a);
+            array a_copy = a;
+            a = transpose(a);
 
             af_add_backend_library(custom_lib_path.c_str());
             af_set_backend_library(1);
-            array aa = a;
-            af_print(aa);
-            ASSERT_ARRAYS_EQ(a, aa);
+            a = transpose(a);
+            ASSERT_ARRAYS_EQ(a_copy, a);
 
             // END of actual test
 
