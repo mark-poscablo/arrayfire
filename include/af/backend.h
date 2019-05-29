@@ -26,6 +26,8 @@ AFAPI af_err af_set_backend(const af_backend bknd);
 
 #if AF_API_VERSION >= 37
 /**
+   Adds a new backend library from an arbitrary path on the file system
+
    \param[in] lib_path is the path of the custom arrayfire library to
               be registered
    \returns   \ref af_err error code
@@ -37,6 +39,8 @@ AFAPI af_err af_add_backend_library(const char *lib_path);
 
 #if AF_API_VERSION >= 37
 /**
+   Activates an ArrayFire library located in an arbitrary path for use
+
    \param[in] lib_idx is the index of a registered custom arrayfire library to
               be activated for use. Must match the order of when the library
               was registered
@@ -49,6 +53,8 @@ AFAPI af_err af_set_backend_library(int lib_idx);
 
 #if AF_API_VERSION >= 37
 /**
+   Returns true if the unified backend is used to call ArrayFire functions
+
    \param[out] result reports whether the application is using the unified
                backend or not
    \returns    \ref af_err error code

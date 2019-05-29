@@ -18,19 +18,23 @@ will return in an exception.
 
 \defgroup unified_func_addbackendlibrary af_add_backend_library
 
-\brief Register an ArrayFire library located in an arbitrary path for use
+\brief Adds a new backend library from an arbitrary path on the file system
 
-The custom library's path can be anywhere in the local file system, even outside
-of where the ArrayFire libraries are found by default (e.g. outside
-`LD_LIBRARY_PATH` in Unix and System or User Path in Windows). Use this in tandem
-with \ref af_set_backend_library(). The order of when this function was called
-for a specific library determines the index to be used in
-\ref af_set_backend_library() in order to activate the desired library. This is
-useful especially for comparing the results or performance between different
-versions of the ArrayFire libraries. Note however that the number of libraries
-that can be registered is limited to 7.
+This function simply registers a new backend library located anywhere in the
+file system, given the path of that library (can be a `.so`, `.dll`, or
+`.dylib` file, depending on the operating system being used).
 
-This is a noop when using any one of the standalone CPU, CUDA, or OpenCL backends.
+Once registered, \ref af_set_backend_library() can be called to activate the
+backend library in a program. The order in which a library is added determines
+the index to be passed in \ref af_set_backend_library() to activate the desired
+library. The number of libraries that can be registered and activated is limited
+to 7.
+
+This function, together with \ref af_set_backend_library() can be used to load
+different versions of the ArrayFire library at runtime.
+
+This is a noop when using any one of the standalone CPU, CUDA, or OpenCL
+backends.
 
 The following is an example of how this can be used:
 \code
@@ -48,13 +52,12 @@ af_set_backend_library(1); // Activates .../2/afcpu.so
 
 \defgroup unified_func_setbackendlibrary af_set_backend_library
 
-\brief Activate an ArrayFire library located in an arbitrary path for use
+\brief Activates an ArrayFire library located in an arbitrary path for use
 
-Must be used after the ArrayFire library has been registered through
-\ref af_add_backend_library(). The index to be passed in must be the order of when
-\ref af_add_backend_library() was called for the target library. This is useful especially
-for comparing the results or performance between different versions of the
-arrayfire libraries.
+This function is used after the ArrayFire library has been registered through
+\ref af_add_backend_library(). The index to be passed in must be the order of
+when \ref af_add_backend_library() was called for the target library. This is
+can be used to load different versions of the ArrayFire library at runtime.
 
 This is a noop when using any one of the standalone CPU, CUDA, or OpenCL backends.
 
@@ -74,10 +77,11 @@ af_set_backend_library(1); // Activates .../2/afcpu.so
 
 \defgroup unified_func_checkunifiedbackend af_check_unified_backend
 
-\brief Check if the application uses the unified backend or not
+\brief Returns `true` if the unified backend is used to call ArrayFire functions
 
-\p result will contain `true` if the unified backend is being used. Otherwise,
-it will contain `false`.
+This function returns `true` if the unified backend is being used to call the
+ArrayFire functions. If the binary is linked directly to one of the backend
+libraries, this function returns `false`.
 
 \ingroup unified_func
 \ingroup arrayfire_func
