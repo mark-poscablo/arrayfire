@@ -308,14 +308,16 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingBackends) {
 
                 setBackend(backend0);
                 array a = randu(3, 2);
-                array at = transpose(a);
+                array a_copy = a;
+                a = transpose(a);
 
                 setBackend(backend1);
                 array b = randu(3, 2);
+                b.eval();
 
                 setBackend(backend0);
-                array att = transpose(at);
-                ASSERT_ARRAYS_EQ(a, att);
+                a = transpose(a);
+                ASSERT_ARRAYS_EQ(a_copy, a);
             }
             else {
                 printf("Only 1 backend available, skipping test\n");
@@ -359,18 +361,19 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingLibraries) {
                        lib_path0.c_str(), lib_path1.c_str());
 
                 af_add_backend_library(lib_path0.c_str());
-                af_add_backend_library(lib_path1.c_str());
-
                 af_set_backend_library(0);
                 array a = randu(3, 2);
-                array at = transpose(a);
+                array a_copy = a;
+                a = transpose(a);
 
+                af_add_backend_library(lib_path1.c_str());
                 af_set_backend_library(1);
                 array b = randu(3, 2);
+                b.eval();
 
                 af_set_backend_library(0);
-                array att = transpose(at);
-                ASSERT_ARRAYS_EQ(a, att);
+                a = transpose(a);
+                ASSERT_ARRAYS_EQ(a_copy, a);
             }
             else {
                 printf("Only 1 backend available, skipping test\n");
