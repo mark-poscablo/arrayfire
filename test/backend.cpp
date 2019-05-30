@@ -33,26 +33,10 @@ using af::transpose;
 using std::string;
 using std::vector;
 
-// These paths are based on where the CI configuration puts the built libraries
-const string build_dir_str = BUILD_DIR;
-#if defined(_WIN32)
-const string library_suffix = ".dll";
-const string library_prefix_cpu = "/bin/afcpu";
-const string library_prefix_cuda = "/bin/afcuda";
-const string library_prefix_opencl = "/bin/afopencl";
-#elif defined(__APPLE__)
-const string library_suffix = ".dylib";
-const string library_prefix_cpu = "/src/backend/cpu/libafcpu";
-const string library_prefix_cuda = "/src/backend/cuda/libafcuda";
-const string library_prefix_opencl = "/src/backend/opencl/libafopencl";
-#elif defined(__linux__)
-const string library_suffix = ".so";
-const string library_prefix_cpu = "/src/backend/cpu/libafcpu";
-const string library_prefix_cuda = "/src/backend/cuda/libafcuda";
-const string library_prefix_opencl = "/src/backend/opencl/libafopencl";
-#else
-#error "Unsupported platform"
-#endif
+// These paths are based on where the CMake configuration puts the built libraries
+const string BUILD_CPU_LIB_PATH = CPU_LIB_PATH;
+const string BUILD_CUDA_LIB_PATH = CUDA_LIB_PATH;
+const string BUILD_OPENCL_LIB_PATH = OPENCL_LIB_PATH;
 
 const char *getActiveBackendString(af_backend active) {
     switch (active) {
@@ -196,9 +180,7 @@ TEST(BACKEND_TEST, SetCustomCpuLibrary) {
             EXPECT_NE(backends, 0);
 
             if (backends & AF_BACKEND_CPU) {
-                string lib_path =
-                    build_dir_str + library_prefix_cpu + library_suffix;
-                af_add_backend_library(lib_path.c_str());
+                af_add_backend_library(BUILD_CPU_LIB_PATH.c_str());
                 af_set_backend_library(0);
                 testFunction<float>();
             }
@@ -228,9 +210,7 @@ TEST(BACKEND_TEST, SetCustomCudaLibrary) {
             EXPECT_NE(backends, 0);
 
             if (backends & AF_BACKEND_CUDA) {
-                string lib_path =
-                    build_dir_str + library_prefix_cuda + library_suffix;
-                af_add_backend_library(lib_path.c_str());
+                af_add_backend_library(BUILD_CUDA_LIB_PATH.c_str());
                 af_set_backend_library(0);
                 testFunction<float>();
             }
@@ -261,9 +241,7 @@ TEST(BACKEND_TEST, SetCustomOpenclLibrary) {
             EXPECT_NE(backends, 0);
 
             if (backends & AF_BACKEND_OPENCL) {
-                string lib_path =
-                    build_dir_str + library_prefix_opencl + library_suffix;
-                af_add_backend_library(lib_path.c_str());
+                af_add_backend_library(BUILD_OPENCL_LIB_PATH.c_str());
                 af_set_backend_library(0);
                 testFunction<float>();
             }
@@ -348,15 +326,13 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingLibraries) {
             bool cuda   = backends & AF_BACKEND_CUDA;
             bool opencl = backends & AF_BACKEND_OPENCL;
 
-            string cpu_path    = build_dir_str + library_prefix_cpu + library_suffix;
-            string cuda_path   = build_dir_str + library_prefix_cuda + library_suffix;
-            string opencl_path = build_dir_str + library_prefix_opencl + library_suffix;
-
             int num_backends = getBackendCount();
             EXPECT_GT(num_backends, 0);
             if (num_backends > 1) {
-                string lib_path0 = cpu ? cpu_path : opencl_path;
-                string lib_path1 = cuda ? cuda_path : opencl_path;
+                string lib_path0 = cpu ? BUILD_CPU_LIB_PATH :
+                                         BUILD_OPENCL_LIB_PATH;
+                string lib_path1 = cuda ? BUILD_CUDA_LIB_PATH :
+                                          BUILD_OPENCL_LIB_PATH;
                 printf("Using %s and %s\n",
                        lib_path0.c_str(), lib_path1.c_str());
 
@@ -404,22 +380,18 @@ TEST(BACKEND_TEST, UseArrayAfterSwitchingToSameLibrary) {
             bool cuda   = backends & AF_BACKEND_CUDA;
             bool opencl = backends & AF_BACKEND_OPENCL;
 
-            string cpu_path    = build_dir_str + library_prefix_cpu + library_suffix;
-            string cuda_path   = build_dir_str + library_prefix_cuda + library_suffix;
-            string opencl_path = build_dir_str + library_prefix_opencl + library_suffix;
-
             string custom_lib_path;
             setBackend(AF_BACKEND_DEFAULT);
             Backend default_backend = getActiveBackend();
             switch (default_backend) {
                 case AF_BACKEND_CPU:
-                    custom_lib_path = cpu_path;
+                    custom_lib_path = BUILD_CPU_LIB_PATH;
                     break;
                 case AF_BACKEND_CUDA:
-                    custom_lib_path = cuda_path;
+                    custom_lib_path = BUILD_CUDA_LIB_PATH;
                     break;
                 case AF_BACKEND_OPENCL:
-                    custom_lib_path = opencl_path;
+                    custom_lib_path = BUILD_OPENCL_LIB_PATH;
                     break;
                 default:
                     fprintf(stderr, "Cannot get default backend");
