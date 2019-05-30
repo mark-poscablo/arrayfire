@@ -173,7 +173,7 @@ AFSymbolManager::AFSymbolManager()
     , prevHandle(0)
     , defaultHandle(nullptr)
     , numBackends(0)
-    , numBackendHandles(NUM_BACKENDS)
+    , newCustomHandleIndex(NUM_BACKENDS)
     , backendsAvailable(0)
     , activeBackend(AF_BACKEND_CPU)
     , defaultBackend(AF_BACKEND_CPU)
@@ -238,7 +238,7 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
 }
 
 af_err AFSymbolManager::addBackendLibrary(const char *lib_path) {
-    if ((numBackendHandles + 1) > MAX_BKND_HANDLES) {
+    if ((newCustomHandleIndex + 1) > MAX_BKND_HANDLES) {
         // No more space for an additional handle
         UNIFIED_ERROR_LOAD_LIB();
     }
@@ -265,8 +265,8 @@ af_err AFSymbolManager::addBackendLibrary(const char *lib_path) {
 
         if (show_load_path) { printf("Using %s\n", lib_path); }
 
-        bkndHandles[numBackendHandles] = handle;
-        numBackendHandles++;
+        bkndHandles[newCustomHandleIndex] = handle;
+        newCustomHandleIndex++;
 
         return AF_SUCCESS;
     }

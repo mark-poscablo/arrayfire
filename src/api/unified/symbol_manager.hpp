@@ -104,7 +104,7 @@ class AFSymbolManager {
     LibHandle prevHandle;
     LibHandle defaultHandle;
     unsigned numBackends;
-    unsigned numBackendHandles;
+    unsigned newCustomHandleIndex;
     int backendsAvailable;
     af_backend activeBackend;
     af_backend defaultBackend;
