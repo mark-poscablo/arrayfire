@@ -70,7 +70,6 @@ void testFunction() {
 TEST(DefaultLibPath, SetBackendDefault) {
     EXPECT_EXIT({
             // START of actual test
-            printf("\nRunning Default Backend...\n");
             testFunction<float>();
             // END of actual test
 
@@ -93,7 +92,6 @@ TEST(DefaultLibPath, SetBackendCpu) {
             EXPECT_NE(backends, 0);
 
             if (backends & AF_BACKEND_CPU) {
-                printf("\nRunning CPU Backend...\n");
                 setBackend(AF_BACKEND_CPU);
                 testFunction<float>();
             }
@@ -122,7 +120,6 @@ TEST(DefaultLibPath, SetBackendCuda) {
             EXPECT_NE(backends, 0);
 
             if (backends & AF_BACKEND_CUDA) {
-                printf("\nRunning CUDA Backend...\n");
                 setBackend(AF_BACKEND_CUDA);
                 testFunction<float>();
             }
@@ -151,7 +148,6 @@ TEST(DefaultLibPath, SetBackendOpencl) {
             EXPECT_NE(backends, 0);
 
             if (backends & AF_BACKEND_OPENCL) {
-                printf("\nRunning OpenCL Backend...\n");
                 setBackend(AF_BACKEND_OPENCL);
                 testFunction<float>();
             }
