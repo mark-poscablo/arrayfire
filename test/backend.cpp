@@ -223,16 +223,21 @@ TEST(CustomLibPath, SetCustomCpuLibrary) {
     EXPECT_EXIT({
             // START of actual test
 
-            int backends = getAvailableBackends();
-            EXPECT_NE(backends, 0);
+            bool is_unified_backend = false;
+            ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
+            if (is_unified_backend) {
+                int backends = getAvailableBackends();
+                EXPECT_NE(backends, 0);
 
-            if (backends & AF_BACKEND_CPU) {
-                af_add_backend_library(BUILD_CPU_LIB_PATH.c_str());
-                af_set_backend_library(0);
-                testFunction<float>();
-            }
-            else {
-                printf("CPU backend not available, skipping test\n");
+                if (backends & AF_BACKEND_CPU) {
+                    af_add_backend_library(BUILD_CPU_LIB_PATH.c_str());
+                    af_set_backend_library(0);
+                    testFunction<float>();
+                } else {
+                    printf("CPU backend not available, skipping test\n");
+                }
+            } else {
+                printf("Not using unified backend, skipping test\n");
             }
 
             // END of actual test
@@ -240,8 +245,7 @@ TEST(CustomLibPath, SetCustomCpuLibrary) {
             if (HasFailure()) {
                 fprintf(stderr, "Test failed");
                 exit(1);
-            }
-            else {
+            } else {
                 fprintf(stderr, "Test succeeded");
                 exit(0);
             }
@@ -253,16 +257,21 @@ TEST(CustomLibPath, SetCustomCudaLibrary) {
         {
             // START of actual test
 
-            int backends = getAvailableBackends();
-            EXPECT_NE(backends, 0);
+            bool is_unified_backend = false;
+            ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
+            if (is_unified_backend) {
+                int backends = getAvailableBackends();
+                EXPECT_NE(backends, 0);
 
-            if (backends & AF_BACKEND_CUDA) {
-                af_add_backend_library(BUILD_CUDA_LIB_PATH.c_str());
-                af_set_backend_library(0);
-                testFunction<float>();
-            }
-            else {
-                printf("CUDA backend not available, skipping test\n");
+                if (backends & AF_BACKEND_CUDA) {
+                    af_add_backend_library(BUILD_CUDA_LIB_PATH.c_str());
+                    af_set_backend_library(0);
+                    testFunction<float>();
+                } else {
+                    printf("CUDA backend not available, skipping test\n");
+                }
+            } else {
+                printf("Not using unified backend, skipping test\n");
             }
 
             // END of actual test
@@ -270,13 +279,11 @@ TEST(CustomLibPath, SetCustomCudaLibrary) {
             if (HasFailure()) {
                 fprintf(stderr, "Test failed");
                 exit(1);
-            }
-            else {
+            } else {
                 fprintf(stderr, "Test succeeded");
                 exit(0);
             }
-        },
-        ::testing::ExitedWithCode(0), "Test succeeded");
+        }, ::testing::ExitedWithCode(0), "Test succeeded");
 }
 
 TEST(CustomLibPath, SetCustomOpenclLibrary) {
@@ -284,16 +291,21 @@ TEST(CustomLibPath, SetCustomOpenclLibrary) {
         {
             // START of actual test
 
-            int backends = getAvailableBackends();
-            EXPECT_NE(backends, 0);
+            bool is_unified_backend = false;
+            ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
+            if (is_unified_backend) {
+                int backends = getAvailableBackends();
+                EXPECT_NE(backends, 0);
 
-            if (backends & AF_BACKEND_OPENCL) {
-                af_add_backend_library(BUILD_OPENCL_LIB_PATH.c_str());
-                af_set_backend_library(0);
-                testFunction<float>();
-            }
-            else {
-                printf("OpenCL backend not available, skipping test\n");
+                if (backends & AF_BACKEND_OPENCL) {
+                    af_add_backend_library(BUILD_OPENCL_LIB_PATH.c_str());
+                    af_set_backend_library(0);
+                    testFunction<float>();
+                } else {
+                    printf("OpenCL backend not available, skipping test\n");
+                }
+            } else {
+                printf("Not using unified backend, skipping test\n");
             }
 
             // END of actual test
@@ -301,54 +313,58 @@ TEST(CustomLibPath, SetCustomOpenclLibrary) {
             if (HasFailure()) {
                 fprintf(stderr, "Test failed");
                 exit(1);
-            }
-            else {
+            } else {
                 fprintf(stderr, "Test succeeded");
                 exit(0);
             }
-        },
-        ::testing::ExitedWithCode(0), "Test succeeded");
+        }, ::testing::ExitedWithCode(0), "Test succeeded");
 }
 
 TEST(CustomLibPath, UseArrayAfterSwitchingLibraries) {
     EXPECT_EXIT({
             // START of actual test
 
-            int backends = getAvailableBackends();
+            bool is_unified_backend = false;
+            ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
+            if (is_unified_backend) {
+                int backends = getAvailableBackends();
 
-            EXPECT_NE(backends, 0);
+                EXPECT_NE(backends, 0);
 
-            bool cpu    = backends & AF_BACKEND_CPU;
-            bool cuda   = backends & AF_BACKEND_CUDA;
-            bool opencl = backends & AF_BACKEND_OPENCL;
+                bool cpu    = backends & AF_BACKEND_CPU;
+                bool cuda   = backends & AF_BACKEND_CUDA;
+                bool opencl = backends & AF_BACKEND_OPENCL;
 
-            int num_backends = getBackendCount();
-            EXPECT_GT(num_backends, 0);
-            if (num_backends > 1) {
-                string lib_path0 = cpu ? BUILD_CPU_LIB_PATH :
-                                         BUILD_OPENCL_LIB_PATH;
-                string lib_path1 = cuda ? BUILD_CUDA_LIB_PATH :
-                                          BUILD_OPENCL_LIB_PATH;
-                printf("Using %s and %s\n",
-                       lib_path0.c_str(), lib_path1.c_str());
+                int num_backends = getBackendCount();
+                EXPECT_GT(num_backends, 0);
+                if (num_backends > 1) {
+                    string lib_path0 =
+                        cpu ? BUILD_CPU_LIB_PATH : BUILD_OPENCL_LIB_PATH;
+                    string lib_path1 =
+                        cuda ? BUILD_CUDA_LIB_PATH : BUILD_OPENCL_LIB_PATH;
+                    printf("Using %s and %s\n", lib_path0.c_str(),
+                           lib_path1.c_str());
 
-                af_add_backend_library(lib_path0.c_str());
-                af_set_backend_library(0);
-                array a = randu(3, 2);
-                array a_copy = a;
-                a = transpose(a);
+                    af_add_backend_library(lib_path0.c_str());
+                    af_set_backend_library(0);
+                    array a      = randu(3, 2);
+                    array a_copy = a;
+                    a            = transpose(a);
 
-                af_add_backend_library(lib_path1.c_str());
-                af_set_backend_library(1);
-                array b = randu(3, 2);
-                b.eval();
+                    af_add_backend_library(lib_path1.c_str());
+                    af_set_backend_library(1);
+                    array b = randu(3, 2);
+                    b.eval();
 
-                af_set_backend_library(0);
-                a = transpose(a);
-                ASSERT_ARRAYS_EQ(a_copy, a);
+                    af_set_backend_library(0);
+                    a = transpose(a);
+                    ASSERT_ARRAYS_EQ(a_copy, a);
+                } else {
+                    printf("Only 1 backend available, skipping test\n");
+                }
             }
             else {
-                printf("Only 1 backend available, skipping test\n");
+                printf("Not using unified backend, skipping test\n");
             }
 
             // END of actual test
@@ -356,8 +372,7 @@ TEST(CustomLibPath, UseArrayAfterSwitchingLibraries) {
             if (HasFailure()) {
                 fprintf(stderr, "Test failed");
                 exit(1);
-            }
-            else {
+            } else {
                 fprintf(stderr, "Test succeeded");
                 exit(0);
             }
@@ -368,55 +383,61 @@ TEST(CustomLibPath, UseArrayAfterSwitchingToSameLibrary) {
     EXPECT_EXIT({
             // START of actual test
 
-            int backends = getAvailableBackends();
+            bool is_unified_backend = false;
+            ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
+            if (is_unified_backend) {
+                int backends = getAvailableBackends();
 
-            EXPECT_NE(backends, 0);
+                EXPECT_NE(backends, 0);
 
-            bool cpu    = backends & AF_BACKEND_CPU;
-            bool cuda   = backends & AF_BACKEND_CUDA;
-            bool opencl = backends & AF_BACKEND_OPENCL;
+                bool cpu    = backends & AF_BACKEND_CPU;
+                bool cuda   = backends & AF_BACKEND_CUDA;
+                bool opencl = backends & AF_BACKEND_OPENCL;
 
-            string custom_lib_path;
-            setBackend(AF_BACKEND_DEFAULT);
-            Backend default_backend = getActiveBackend();
-            switch (default_backend) {
-                case AF_BACKEND_CPU:
-                    custom_lib_path = BUILD_CPU_LIB_PATH;
-                    break;
-                case AF_BACKEND_CUDA:
-                    custom_lib_path = BUILD_CUDA_LIB_PATH;
-                    break;
-                case AF_BACKEND_OPENCL:
-                    custom_lib_path = BUILD_OPENCL_LIB_PATH;
-                    break;
-                default:
-                    fprintf(stderr, "Cannot get default backend");
-                    break;
+                string custom_lib_path;
+                setBackend(AF_BACKEND_DEFAULT);
+                Backend default_backend = getActiveBackend();
+                switch (default_backend) {
+                    case AF_BACKEND_CPU:
+                        custom_lib_path = BUILD_CPU_LIB_PATH;
+                        break;
+                    case AF_BACKEND_CUDA:
+                        custom_lib_path = BUILD_CUDA_LIB_PATH;
+                        break;
+                    case AF_BACKEND_OPENCL:
+                        custom_lib_path = BUILD_OPENCL_LIB_PATH;
+                        break;
+                    default:
+                        fprintf(stderr, "Cannot get default backend");
+                        break;
+                }
+                EXPECT_TRUE(default_backend == AF_BACKEND_CPU ||
+                            default_backend == AF_BACKEND_CUDA ||
+                            default_backend == AF_BACKEND_OPENCL);
+
+                printf("Using %s\n", custom_lib_path.c_str());
+
+                af_add_backend_library(custom_lib_path.c_str());
+                af_set_backend_library(0);
+                array a      = randu(3, 3);
+                array a_copy = a;
+                a            = transpose(a);
+
+                af_add_backend_library(custom_lib_path.c_str());
+                af_set_backend_library(1);
+                a = transpose(a);
+                ASSERT_ARRAYS_EQ(a_copy, a);
             }
-            EXPECT_TRUE(default_backend == AF_BACKEND_CPU ||
-                        default_backend == AF_BACKEND_CUDA ||
-                        default_backend == AF_BACKEND_OPENCL);
-
-            printf("Using %s\n", custom_lib_path.c_str());
-
-            af_add_backend_library(custom_lib_path.c_str());
-            af_set_backend_library(0);
-            array a = randu(3, 3);
-            array a_copy = a;
-            a = transpose(a);
-
-            af_add_backend_library(custom_lib_path.c_str());
-            af_set_backend_library(1);
-            a = transpose(a);
-            ASSERT_ARRAYS_EQ(a_copy, a);
+            else {
+                printf("Not using unified backend, skipping test\n");
+            }
 
             // END of actual test
 
             if (HasFailure()) {
                 fprintf(stderr, "Test failed");
                 exit(1);
-            }
-            else {
+            } else {
                 fprintf(stderr, "Test succeeded");
                 exit(0);
             }
@@ -432,7 +453,7 @@ TEST(CustomLibPath, InvalidLibPath) {
                 EXPECT_EQ(AF_ERR_LOAD_LIB, af_add_backend_library("qwerty.so"));
             }
             else {
-                ASSERT_SUCCESS(af_add_backend_library("qwerty.so"));
+                printf("Not using unified backend, skipping test\n");
             }
             // END of actual test
 
@@ -456,7 +477,7 @@ TEST(CustomLibPath, LibIdxPointsToNullHandle) {
                 EXPECT_EQ(AF_ERR_LOAD_LIB, af_set_backend_library(0));
             }
             else {
-                ASSERT_SUCCESS(af_set_backend_library(0));
+                printf("Not using unified backend, skipping test\n");
             }
             // END of actual test
 
@@ -479,7 +500,7 @@ TEST(CustomLibPath, LibIdxExceedsMaxHandles) {
                 EXPECT_EQ(AF_ERR_LOAD_LIB, af_set_backend_library(999));
             }
             else {
-                ASSERT_SUCCESS(af_set_backend_library(999));
+                printf("Not using unified backend, skipping test\n");
             }
             // END of actual test
 
@@ -492,4 +513,52 @@ TEST(CustomLibPath, LibIdxExceedsMaxHandles) {
                 exit(0);
             }
         }, ::testing::ExitedWithCode(0), "Test succeeded");
+}
+
+TEST(CustomLibPath, AddBackendLibraryNotUnified) {
+    EXPECT_EXIT(
+        {
+            // START of actual test
+            bool is_unified_backend = false;
+            ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
+            if (!is_unified_backend) {
+                ASSERT_SUCCESS(af_add_backend_library(""));
+            } else {
+                printf("Using unified backend, skipping test\n");
+            }
+            // END of actual test
+
+            if (HasFailure()) {
+                fprintf(stderr, "Test failed");
+                exit(1);
+            } else {
+                fprintf(stderr, "Test succeeded");
+                exit(0);
+            }
+        },
+        ::testing::ExitedWithCode(0), "Test succeeded");
+}
+
+TEST(CustomLibPath, SetBackendLibraryNotUnified) {
+    EXPECT_EXIT(
+        {
+            // START of actual test
+            bool is_unified_backend = false;
+            ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
+            if (!is_unified_backend) {
+                ASSERT_SUCCESS(af_set_backend_library(0));
+            } else {
+                printf("Using unified backend, skipping test\n");
+            }
+            // END of actual test
+
+            if (HasFailure()) {
+                fprintf(stderr, "Test failed");
+                exit(1);
+            } else {
+                fprintf(stderr, "Test succeeded");
+                exit(0);
+            }
+        },
+        ::testing::ExitedWithCode(0), "Test succeeded");
 }
