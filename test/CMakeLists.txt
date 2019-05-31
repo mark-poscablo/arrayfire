@@ -6,9 +6,6 @@
 # http://arrayfire.com/licenses/BSD-3-Clause
 
 
-set(BUILD_DIR "${ArrayFire_BINARY_DIR}")
-add_definitions("-DBUILD_DIR=\"${BUILD_DIR}\"")
-
 set(CPU_LIB_NAME "${CMAKE_SHARED_LIBRARY_PREFIX}afcpu${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(CUDA_LIB_NAME "${CMAKE_SHARED_LIBRARY_PREFIX}afcuda${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(OPENCL_LIB_NAME "${CMAKE_SHARED_LIBRARY_PREFIX}afopencl${CMAKE_SHARED_LIBRARY_SUFFIX}")
@@ -23,9 +20,9 @@ else()
   set(OPENCL_LIB_PATH "${ArrayFire_BINARY_DIR}/${OPENCL_BACKEND_SOURCE_DIR}/${OPENCL_LIB_NAME}")
 endif()
 
-add_definitions("-DCPU_LIB_PATH=\"${CPU_LIB_PATH}\"")
-add_definitions("-DCUDA_LIB_PATH=\"${CUDA_LIB_PATH}\"")
-add_definitions("-DOPENCL_LIB_PATH=\"${OPENCL_LIB_PATH}\"")
+# add_definitions("-DCPU_LIB_PATH=\"${CPU_LIB_PATH}\"")
+# add_definitions("-DCUDA_LIB_PATH=\"${CUDA_LIB_PATH}\"")
+# add_definitions("-DOPENCL_LIB_PATH=\"${OPENCL_LIB_PATH}\"")
 
 set(AF_TEST_WITH_MTX_FILES
     ON CACHE BOOL
@@ -192,7 +189,11 @@ make_test(SRC approx2.cpp)
 make_test(SRC array.cpp CXX11)
 make_test(SRC arrayio.cpp)
 make_test(SRC assign.cpp)
-make_test(SRC backend.cpp)
+make_test(SRC backend.cpp
+          DEFINITIONS CPU_LIB_PATH="${CPU_LIB_PATH}"
+                      CUDA_LIB_PATH="${CUDA_LIB_PATH}"
+                      OPENCL_LIB_PATH="${OPENCL_LIB_PATH}"
+                      )
 make_test(SRC basic.cpp)
 make_test(SRC basic_c.c)
 make_test(SRC bilateral.cpp)
