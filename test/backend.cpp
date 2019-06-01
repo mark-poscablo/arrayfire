@@ -444,6 +444,67 @@ TEST(CustomLibPath, UseArrayAfterSwitchingToSameLibrary) {
         }, ::testing::ExitedWithCode(0), "Test succeeded");
 }
 
+TEST(CustomLibPath, ExceedLibHandleListCapacity) {
+    EXPECT_EXIT({
+            // START of actual test
+
+            bool is_unified_backend = false;
+            ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
+            if (is_unified_backend) {
+                int backends = getAvailableBackends();
+
+                EXPECT_NE(backends, 0);
+
+                bool cpu    = backends & AF_BACKEND_CPU;
+                bool cuda   = backends & AF_BACKEND_CUDA;
+                bool opencl = backends & AF_BACKEND_OPENCL;
+
+                string custom_lib_path;
+                setBackend(AF_BACKEND_DEFAULT);
+                Backend default_backend = getActiveBackend();
+                switch (default_backend) {
+                    case AF_BACKEND_CPU:
+                        custom_lib_path = BUILD_CPU_LIB_PATH;
+                        break;
+                    case AF_BACKEND_CUDA:
+                        custom_lib_path = BUILD_CUDA_LIB_PATH;
+                        break;
+                    case AF_BACKEND_OPENCL:
+                        custom_lib_path = BUILD_OPENCL_LIB_PATH;
+                        break;
+                    default:
+                        fprintf(stderr, "Cannot get default backend");
+                        break;
+                }
+                EXPECT_TRUE(default_backend == AF_BACKEND_CPU ||
+                            default_backend == AF_BACKEND_CUDA ||
+                            default_backend == AF_BACKEND_OPENCL);
+
+                printf("Using %s\n", custom_lib_path.c_str());
+
+                int max_custom_bknd_libs = 7;
+                for (int i = 0; i < max_custom_bknd_libs; ++i) {
+                    ASSERT_SUCCESS(
+                        af_add_backend_library(custom_lib_path.c_str()));
+                }
+                EXPECT_EQ(AF_ERR_BKND_LIB_LIST_FULL,
+                          af_add_backend_library(custom_lib_path.c_str()));
+            } else {
+                printf("Not using unified backend, skipping test\n");
+            }
+
+            // END of actual test
+
+            if (HasFailure()) {
+                fprintf(stderr, "Test failed");
+                exit(1);
+            } else {
+                fprintf(stderr, "Test succeeded");
+                exit(0);
+            }
+        }, ::testing::ExitedWithCode(0), "Test succeeded");
+}
+
 TEST(CustomLibPath, InvalidLibPath) {
     EXPECT_EXIT({
             // START of actual test
@@ -474,9 +535,8 @@ TEST(CustomLibPath, LibIdxPointsToNullHandle) {
             bool is_unified_backend = false;
             ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
             if (is_unified_backend) {
-                EXPECT_EQ(AF_ERR_LOAD_LIB, af_set_backend_library(0));
-            }
-            else {
+                EXPECT_EQ(AF_ERR_NO_TGT_BKND_LIB, af_set_backend_library(0));
+            } else {
                 printf("Not using unified backend, skipping test\n");
             }
             // END of actual test
@@ -497,9 +557,9 @@ TEST(CustomLibPath, LibIdxExceedsMaxHandles) {
             bool is_unified_backend = false;
             ASSERT_SUCCESS(af_check_unified_backend(&is_unified_backend));
             if (is_unified_backend) {
-                EXPECT_EQ(AF_ERR_LOAD_LIB, af_set_backend_library(999));
-            }
-            else {
+                EXPECT_EQ(AF_ERR_BKND_LIB_IDX_INVALID,
+                          af_set_backend_library(999));
+            } else {
                 printf("Not using unified backend, skipping test\n");
             }
             // END of actual test

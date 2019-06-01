@@ -25,12 +25,12 @@ namespace unified {
 const int NUM_BACKENDS = 3;
 const int MAX_BKND_HANDLES = 10;
 
-#define UNIFIED_ERROR_LOAD_LIB()                                       \
+#define UNIFIED_ERROR_LOAD_LIB(AF_ERR)                            \
     AF_RETURN_ERROR(                                                   \
         "Failed to load dynamic library. "                             \
         "See http://www.arrayfire.com/docs/unifiedbackend.htm "        \
         "for instructions to set up environment for Unified backend.", \
-        AF_ERR_LOAD_LIB)
+        AF_ERR)
 
 static inline int backend_index(af::Backend be) {
     switch (be) {
@@ -60,7 +60,7 @@ class AFSymbolManager {
     template<typename... CalleeArgs>
     af_err call(const char* symbolName, CalleeArgs... args) {
         typedef af_err (*af_func)(CalleeArgs...);
-        if (!activeHandle) { UNIFIED_ERROR_LOAD_LIB(); }
+        if (!activeHandle) { UNIFIED_ERROR_LOAD_LIB(AF_ERR_NO_ACTIVE_BKND); }
         thread_local std::array<std::unordered_map<const char*, af_func>,
                                 NUM_BACKENDS>
             funcHandles;

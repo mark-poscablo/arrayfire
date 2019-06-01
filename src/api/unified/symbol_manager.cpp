@@ -223,7 +223,7 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
             activeBackend = defaultBackend;
             return AF_SUCCESS;
         } else {
-            UNIFIED_ERROR_LOAD_LIB();
+            UNIFIED_ERROR_LOAD_LIB(AF_ERR_NO_TGT_BKND_LIB);
         }
     }
     int idx = bknd >> 1;  // Convert 1, 2, 4 -> 0, 1, 2
@@ -233,14 +233,14 @@ af_err AFSymbolManager::setBackend(af::Backend bknd) {
         activeBackend = bknd;
         return AF_SUCCESS;
     } else {
-        UNIFIED_ERROR_LOAD_LIB();
+        UNIFIED_ERROR_LOAD_LIB(AF_ERR_NO_TGT_BKND_LIB);
     }
 }
 
 af_err AFSymbolManager::addBackendLibrary(const char *lib_path) {
     if ((newCustomHandleIndex + 1) > MAX_BKND_HANDLES) {
         // No more space for an additional handle
-        UNIFIED_ERROR_LOAD_LIB();
+        UNIFIED_ERROR_LOAD_LIB(AF_ERR_BKND_LIB_LIST_FULL);
     }
 
     string show_flag    = getEnvVar("AF_SHOW_LOAD_PATH");
@@ -257,10 +257,13 @@ af_err AFSymbolManager::addBackendLibrary(const char *lib_path) {
             AF_TRACE("Device Count: {}.", count);
             if (count == 0) {
                 // No available device for this backend
-                // Or loaded library is invalid (since function can't be found)
                 handle = nullptr;
-                UNIFIED_ERROR_LOAD_LIB();
+                UNIFIED_ERROR_LOAD_LIB(AF_ERR_BKND_NO_DEVICE);
             }
+        } else {
+            // Loaded library is invalid
+            handle = nullptr;
+            UNIFIED_ERROR_LOAD_LIB(AF_ERR_BKND_LIB_INVALID);
         }
 
         if (show_load_path) { printf("Using %s\n", lib_path); }
@@ -272,7 +275,7 @@ af_err AFSymbolManager::addBackendLibrary(const char *lib_path) {
     }
     else {
         // loadLibrary failed, maybe because path is invalid or another reason
-        UNIFIED_ERROR_LOAD_LIB();
+        UNIFIED_ERROR_LOAD_LIB(AF_ERR_LOAD_LIB);
     }
 }
 
@@ -282,7 +285,7 @@ af_err AFSymbolManager::setBackendLibrary(int lib_idx) {
 
     if (actual_idx >= MAX_BKND_HANDLES) {
         // lib_idx more than the capacity of bkndHandles
-        UNIFIED_ERROR_LOAD_LIB();
+        UNIFIED_ERROR_LOAD_LIB(AF_ERR_BKND_LIB_IDX_INVALID);
     }
 
     if (bkndHandles[actual_idx]) {
@@ -298,7 +301,7 @@ af_err AFSymbolManager::setBackendLibrary(int lib_idx) {
         return AF_SUCCESS;
     } else {
         // lib_idx not pointing to a library yet
-        UNIFIED_ERROR_LOAD_LIB();
+        UNIFIED_ERROR_LOAD_LIB(AF_ERR_NO_TGT_BKND_LIB);
     }
 }
 
