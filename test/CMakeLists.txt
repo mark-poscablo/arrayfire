@@ -20,10 +20,6 @@ else()
   set(OPENCL_LIB_PATH "${ArrayFire_BINARY_DIR}/${OPENCL_BACKEND_SOURCE_DIR}/${OPENCL_LIB_NAME}")
 endif()
 
-# add_definitions("-DCPU_LIB_PATH=\"${CPU_LIB_PATH}\"")
-# add_definitions("-DCUDA_LIB_PATH=\"${CUDA_LIB_PATH}\"")
-# add_definitions("-DOPENCL_LIB_PATH=\"${OPENCL_LIB_PATH}\"")
-
 set(AF_TEST_WITH_MTX_FILES
     ON CACHE BOOL
     "Download and run tests on large matrices form sparse.tamu.edu")
