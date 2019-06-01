@@ -230,8 +230,8 @@ TEST(CustomLibPath, SetCustomCpuLibrary) {
                 EXPECT_NE(backends, 0);
 
                 if (backends & AF_BACKEND_CPU) {
-                    af_add_backend_library(BUILD_CPU_LIB_PATH.c_str());
-                    af_set_backend_library(0);
+                    ASSERT_SUCCESS(af_add_backend_library(BUILD_CPU_LIB_PATH.c_str()));
+                    ASSERT_SUCCESS(af_set_backend_library(0));
                     testFunction<float>();
                 } else {
                     printf("CPU backend not available, skipping test\n");
@@ -264,8 +264,8 @@ TEST(CustomLibPath, SetCustomCudaLibrary) {
                 EXPECT_NE(backends, 0);
 
                 if (backends & AF_BACKEND_CUDA) {
-                    af_add_backend_library(BUILD_CUDA_LIB_PATH.c_str());
-                    af_set_backend_library(0);
+                    ASSERT_SUCCESS(af_add_backend_library(BUILD_CUDA_LIB_PATH.c_str()));
+                    ASSERT_SUCCESS(af_set_backend_library(0));
                     testFunction<float>();
                 } else {
                     printf("CUDA backend not available, skipping test\n");
@@ -298,8 +298,8 @@ TEST(CustomLibPath, SetCustomOpenclLibrary) {
                 EXPECT_NE(backends, 0);
 
                 if (backends & AF_BACKEND_OPENCL) {
-                    af_add_backend_library(BUILD_OPENCL_LIB_PATH.c_str());
-                    af_set_backend_library(0);
+                    ASSERT_SUCCESS(af_add_backend_library(BUILD_OPENCL_LIB_PATH.c_str()));
+                    ASSERT_SUCCESS(af_set_backend_library(0));
                     testFunction<float>();
                 } else {
                     printf("OpenCL backend not available, skipping test\n");
@@ -345,18 +345,18 @@ TEST(CustomLibPath, UseArrayAfterSwitchingLibraries) {
                     printf("Using %s and %s\n", lib_path0.c_str(),
                            lib_path1.c_str());
 
-                    af_add_backend_library(lib_path0.c_str());
-                    af_set_backend_library(0);
+                    ASSERT_SUCCESS(af_add_backend_library(lib_path0.c_str()));
+                    ASSERT_SUCCESS(af_set_backend_library(0));
                     array a      = randu(3, 2);
                     array a_copy = a;
                     a            = transpose(a);
 
-                    af_add_backend_library(lib_path1.c_str());
-                    af_set_backend_library(1);
+                    ASSERT_SUCCESS(af_add_backend_library(lib_path1.c_str()));
+                    ASSERT_SUCCESS(af_set_backend_library(1));
                     array b = randu(3, 2);
                     b.eval();
 
-                    af_set_backend_library(0);
+                    ASSERT_SUCCESS(af_set_backend_library(0));
                     a = transpose(a);
                     ASSERT_ARRAYS_EQ(a_copy, a);
                 } else {
@@ -417,14 +417,14 @@ TEST(CustomLibPath, UseArrayAfterSwitchingToSameLibrary) {
 
                 printf("Using %s\n", custom_lib_path.c_str());
 
-                af_add_backend_library(custom_lib_path.c_str());
-                af_set_backend_library(0);
+                ASSERT_SUCCESS(af_add_backend_library(custom_lib_path.c_str()));
+                ASSERT_SUCCESS(af_set_backend_library(0));
                 array a      = randu(3, 3);
                 array a_copy = a;
                 a            = transpose(a);
 
-                af_add_backend_library(custom_lib_path.c_str());
-                af_set_backend_library(1);
+                ASSERT_SUCCESS(af_add_backend_library(custom_lib_path.c_str()));
+                ASSERT_SUCCESS(af_set_backend_library(1));
                 a = transpose(a);
                 ASSERT_ARRAYS_EQ(a_copy, a);
             }
