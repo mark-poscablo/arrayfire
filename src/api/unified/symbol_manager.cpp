@@ -175,8 +175,8 @@ AFSymbolManager::AFSymbolManager()
     , numBackends(0)
     , newCustomHandleIndex(NUM_BACKENDS)
     , backendsAvailable(0)
-    , activeBackend(AF_BACKEND_CPU)
-    , defaultBackend(AF_BACKEND_CPU)
+    , activeBackend(AF_BACKEND_DEFAULT)
+    , defaultBackend(AF_BACKEND_DEFAULT)
     , logger(loggerFactory("unified")) {
     // In order of priority.
     static const af_backend order[] = {AF_BACKEND_CUDA, AF_BACKEND_OPENCL,
