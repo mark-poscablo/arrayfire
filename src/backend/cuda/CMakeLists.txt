@@ -174,6 +174,8 @@ cuda_add_library(afcuda
     dilate3d.cu
     erode.cu
     erode3d.cu
+    Event.cpp
+    Event.hpp
     exampleFunction.cu
     fast.cu
     fast_pyramid.cu
@@ -340,6 +342,7 @@ cuda_add_library(afcuda
     device_manager.cpp
     device_manager.hpp
     debug_cuda.hpp
+    debug_thrust.hpp
     diagonal.hpp
     diff.hpp
     driver.cpp
@@ -471,15 +474,6 @@ target_include_directories (afcuda
     ${CMAKE_CURRENT_SOURCE_DIR}/jit
     ${CMAKE_CURRENT_BINARY_DIR}
 )
-
-if(OpenMP_CXX_FOUND)
-  target_link_libraries(afcuda
-    PRIVATE
-      OpenMP::OpenMP_CXX
-    )
-elseif(NOT APPLE)
-  message(FATAL_ERROR "OpenMP is required to compile CUDA Backend")
-endif()
 
 set_target_properties(afcuda PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
