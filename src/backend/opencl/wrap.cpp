@@ -18,7 +18,6 @@
 namespace opencl {
 
 template<typename T>
-template<typename T>
 void wrap(Array<T> &out, const Array<T> &in,
           const dim_t ox, const dim_t oy,
           const dim_t wx, const dim_t wy,
